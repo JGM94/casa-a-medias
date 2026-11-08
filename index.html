@@ -1,0 +1,917 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Casa a Medias</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#2F6B55">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Casa a Medias">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#F0F2EC; --surface:#FFFFFF; --surface-alt:#E6EAE1; --border:#D6DCCF;
+  --fg:#20261F; --fg-muted:#5C6677;
+  --accent:#2F6B55; --accent-fg:#FFFFFF;
+  --person-a:#B8551F; --person-a-soft:#F3DECB;
+  --person-b:#265E86; --person-b-soft:#D7E5EF;
+  --good:#2E7D4F; --good-soft:#DCEBDF;
+  --warn:#9C6B0F; --warn-soft:#F2E3C4;
+  --danger:#B23C2E; --danger-soft:#F3D9D3;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#13170F; --surface:#1B2016; --surface-alt:#232A1C; --border:#333D28;
+    --fg:#E7EBE0; --fg-muted:#9FAB92;
+    --accent:#64C398; --accent-fg:#0D1A12;
+    --person-a:#E08A49; --person-a-soft:#3A2817;
+    --person-b:#6FB1DD; --person-b-soft:#1C2C38;
+    --good:#67C68C; --good-soft:#1E3324;
+    --warn:#E0B24C; --warn-soft:#3A2F15;
+    --danger:#E2847A; --danger-soft:#3A201A;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#13170F; --surface:#1B2016; --surface-alt:#232A1C; --border:#333D28;
+  --fg:#E7EBE0; --fg-muted:#9FAB92;
+  --accent:#64C398; --accent-fg:#0D1A12;
+  --person-a:#E08A49; --person-a-soft:#3A2817;
+  --person-b:#6FB1DD; --person-b-soft:#1C2C38;
+  --good:#67C68C; --good-soft:#1E3324;
+  --warn:#E0B24C; --warn-soft:#3A2F15;
+  --danger:#E2847A; --danger-soft:#3A201A;
+  color-scheme: dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0; background:var(--bg); color:var(--fg)}
+body{
+  font-family:'Karla',system-ui,sans-serif; font-size:15px; line-height:1.45;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  padding-left:max(16px, env(safe-area-inset-left,0px));
+  padding-right:max(16px, env(safe-area-inset-right,0px));
+  min-height:100vh;
+}
+h1,h2,h3{font-family:'Fraunces',Georgia,serif; font-weight:700; margin:0}
+button{font-family:inherit}
+.hidden{display:none!important}
+#topbar{
+  position:sticky; top:0; z-index:9;
+  background:var(--surface); border-bottom:1px solid var(--border);
+  margin:0 -16px; padding:14px 16px 0;
+}
+.topbar-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding-bottom:10px}
+.topbar-row h1{font-size:19px; color:var(--accent)}
+.topbar-sub{font-size:12px; color:var(--fg-muted)}
+.icon-btn{
+  background:none; border:1px solid var(--border); border-radius:10px;
+  width:36px; height:36px; font-size:17px; color:var(--fg); cursor:pointer;
+  display:flex; align-items:center; justify-content:center;
+}
+.icon-btn:active{transform:scale(0.96)}
+#tabs{display:flex; gap:4px; overflow-x:auto; padding-bottom:10px; -ms-overflow-style:none; scrollbar-width:none}
+#tabs::-webkit-scrollbar{display:none}
+.tab-btn{
+  flex:0 0 auto; background:none; border:none; padding:8px 12px; border-radius:10px 10px 0 0;
+  font-size:13px; font-weight:600; color:var(--fg-muted); cursor:pointer; white-space:nowrap;
+  border-bottom:2px solid transparent;
+}
+.tab-btn.active{color:var(--accent); border-bottom-color:var(--accent); background:var(--surface-alt)}
+main{max-width:640px; margin:0 auto; padding:16px 0 48px}
+.card{
+  background:var(--surface); border:1px solid var(--border); border-radius:12px;
+  padding:14px 16px; margin-bottom:12px;
+}
+.section-title{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--fg-muted); margin:18px 0 8px}
+.section-title:first-child{margin-top:0}
+.empty{color:var(--fg-muted); font-size:14px; padding:18px 4px}
+.task-row{display:flex; align-items:flex-start; gap:12px}
+.task-icon{font-size:22px; line-height:1; flex:0 0 auto; width:30px; text-align:center}
+.task-main{flex:1; min-width:0}
+.task-title{font-weight:600; font-size:15px}
+.task-meta{font-size:12.5px; color:var(--fg-muted); margin-top:2px}
+.pill{display:inline-flex; align-items:center; gap:4px; font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:99px; letter-spacing:.02em}
+.pill-a{background:var(--person-a-soft); color:var(--person-a)}
+.pill-b{background:var(--person-b-soft); color:var(--person-b)}
+.pill-overdue{background:var(--danger-soft); color:var(--danger)}
+.pill-today{background:var(--warn-soft); color:var(--warn)}
+.pill-done{background:var(--good-soft); color:var(--good)}
+.task-actions{margin-top:10px; display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+.btn{
+  border-radius:9px; border:1px solid var(--border); background:var(--surface);
+  color:var(--fg); font-size:13px; font-weight:600; padding:8px 12px; cursor:pointer;
+}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+.btn-ghost{background:none; border:none; color:var(--fg-muted); padding:6px 8px; text-decoration:underline}
+.btn-danger{color:var(--danger); border-color:var(--danger)}
+.btn-sm{padding:6px 10px; font-size:12.5px}
+.choose-row{display:flex; gap:8px; margin-top:10px}
+.choose-btn{flex:1; border-radius:9px; border:1px solid var(--border); background:var(--surface-alt); padding:10px 8px; font-weight:700; font-size:13px; cursor:pointer}
+.choose-a{border-color:var(--person-a); color:var(--person-a)}
+.choose-b{border-color:var(--person-b); color:var(--person-b)}
+input,select{
+  width:100%; background:var(--surface); border:1px solid var(--border); border-radius:9px;
+  padding:9px 11px; font-size:14px; color:var(--fg); font-family:inherit;
+}
+label{font-size:12.5px; font-weight:700; color:var(--fg-muted); display:block; margin:12px 0 4px}
+label:first-child{margin-top:0}
+.weekday-grid{display:flex; gap:6px; flex-wrap:wrap}
+.weekday-chip{
+  border:1px solid var(--border); border-radius:8px; padding:7px 0; width:40px; text-align:center;
+  font-size:12px; font-weight:700; cursor:pointer; background:var(--surface);
+}
+.weekday-chip.on{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+.modal-wrap{position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:20; display:flex; align-items:flex-end; justify-content:center}
+@media (min-width:560px){.modal-wrap{align-items:center}}
+.modal{
+  background:var(--surface); border-radius:16px 16px 0 0; width:100%; max-width:480px;
+  max-height:88vh; overflow-y:auto; padding:20px 20px calc(20px + env(safe-area-inset-bottom,0px));
+}
+@media (min-width:560px){.modal{border-radius:16px}}
+.modal h2{font-size:18px; margin-bottom:4px}
+.modal-sub{font-size:13px; color:var(--fg-muted); margin-bottom:14px}
+.row{display:flex; gap:10px}
+.row>*{flex:1}
+.week-grid{display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:6px}
+.week-day{border:1px solid var(--border); border-radius:10px; padding:6px 4px; background:var(--surface); min-height:90px}
+.week-day.is-today{border-color:var(--accent); border-width:2px}
+.week-day-head{font-size:10.5px; color:var(--fg-muted); text-align:center; font-weight:700; text-transform:uppercase}
+.week-day-num{font-size:14px; text-align:center; font-weight:700; margin-bottom:5px; font-variant-numeric:tabular-nums}
+.week-chip{font-size:14px; text-align:center; margin-bottom:3px; border-radius:6px; padding:1px 0}
+.week-chip.done{opacity:.45}
+.week-nav{display:flex; align-items:center; justify-content:space-between; margin-bottom:10px}
+.week-nav-label{font-weight:700; font-size:14px; font-family:'Fraunces',serif}
+.hist-day{font-size:12px; font-weight:700; color:var(--fg-muted); text-transform:uppercase; letter-spacing:.03em; margin:16px 0 6px}
+.hist-day:first-child{margin-top:0}
+.hist-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--border)}
+.hist-row:last-child{border-bottom:none}
+.hist-time{font-size:11.5px; color:var(--fg-muted); font-variant-numeric:tabular-nums; width:40px; flex:0 0 auto}
+.hist-text{flex:1; font-size:14px; min-width:0}
+.period-tabs{display:flex; gap:6px; margin-bottom:16px}
+.period-btn{flex:1; border:1px solid var(--border); background:var(--surface); border-radius:9px; padding:7px; font-size:12.5px; font-weight:700; cursor:pointer; color:var(--fg-muted)}
+.period-btn.active{background:var(--accent); color:var(--accent-fg); border-color:var(--accent)}
+.split-bar{display:flex; height:28px; border-radius:8px; overflow:hidden; margin:10px 0}
+.split-seg{display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; color:#fff; transition:width .3s}
+.stat-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:12px}
+.stat-tile{background:var(--surface-alt); border-radius:10px; padding:10px 12px}
+.stat-tile .num{font-size:22px; font-weight:700; font-family:'Fraunces',serif; font-variant-numeric:tabular-nums}
+.stat-tile .lab{font-size:11.5px; color:var(--fg-muted)}
+.toast{
+  position:fixed; left:16px; right:16px; bottom:calc(16px + env(safe-area-inset-bottom,0px));
+  background:var(--fg); color:var(--bg); padding:11px 14px; border-radius:10px; font-size:13px;
+  z-index:30; text-align:center;
+}
+.onboard-wrap{min-height:80vh; display:flex; align-items:center; justify-content:center; padding:24px 0}
+.onboard-card{max-width:400px; width:100%}
+.whoami{display:flex; gap:10px; margin-top:16px}
+.whoami-btn{flex:1; border-radius:12px; border:2px solid var(--border); background:var(--surface); padding:18px 8px; font-weight:700; font-size:14px; cursor:pointer}
+.whoami-btn.a{color:var(--person-a)}
+.whoami-btn.b{color:var(--person-b)}
+.me-badge{font-size:11px; font-weight:700; color:var(--fg-muted)}
+.setup-screen{max-width:520px; margin:40px auto; padding:0 4px}
+.setup-screen code{background:var(--surface-alt); padding:2px 6px; border-radius:5px; font-size:13px}
+.setup-screen pre{background:var(--surface-alt); padding:12px; border-radius:9px; overflow-x:auto; font-size:12.5px}
+.setup-screen ol{padding-left:20px}
+.setup-screen li{margin-bottom:10px}
+.notif-btn{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface-alt); border-radius:10px; padding:10px 12px; margin-top:10px}
+</style>
+</head>
+<body>
+
+<!--
+  ========================================================================
+  CONFIGURACION DE FIREBASE — reemplaza estos valores por los de TU
+  proyecto gratuito de Firebase (ver instrucciones que te di en el chat).
+  Estos valores no son secretos: solo identifican el proyecto, la
+  seguridad real la dan las reglas de Firestore.
+  ========================================================================
+-->
+<script>
+var firebaseConfig = {
+  apiKey: "TU_API_KEY",
+  authDomain: "TU_PROYECTO.firebaseapp.com",
+  projectId: "TU_PROYECTO",
+  storageBucket: "TU_PROYECTO.appspot.com",
+  messagingSenderId: "TU_SENDER_ID",
+  appId: "TU_APP_ID"
+};
+</script>
+
+<div id="topbar" class="hidden">
+  <div class="topbar-row">
+    <div>
+      <h1>Casa a Medias</h1>
+      <div class="topbar-sub" id="who-sub">cargando…</div>
+    </div>
+    <button class="icon-btn" data-action="open-settings" aria-label="Ajustes">⚙️</button>
+  </div>
+  <div id="tabs"></div>
+</div>
+<main id="app"><div class="empty">Cargando…</div></main>
+<div id="modal-root"></div>
+<div id="toast-root"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+var state = { db:null, dbReady:false, settings:null, settingsLoaded:false, tasks:[], tasksLoaded:false, completions:[], completionsLoaded:false };
+var ui = { tab:'hoy', weekOffset:0, statsPeriod:'7', chooseFor:null, confirmDelCompletion:null, confirmDelTask:null, editingTask:null, addingTask:false, settingsOpen:false };
+var TABS = [
+  {id:'hoy', label:'Hoy'},
+  {id:'semana', label:'Semana'},
+  {id:'historial', label:'Historial'},
+  {id:'stats', label:'Reparto'},
+  {id:'tareas', label:'Tareas'}
+];
+var WEEKDAY_ORDER = [1,2,3,4,5,6,0];
+var WEEKDAY_LABEL = {0:'Dom',1:'Lun',2:'Mar',3:'Mié',4:'Jue',5:'Vie',6:'Sáb'};
+var lastNotifiedCount = 0;
+
+function myPerson(){ try{ return localStorage.getItem('casaAMedias_myPerson'); }catch(e){ return null; } }
+function setMyPerson(p){ try{ localStorage.setItem('casaAMedias_myPerson', p); }catch(e){} render(); }
+
+function dateOnly(d){ var x=new Date(d); x.setHours(0,0,0,0); return x; }
+function addDays(d,n){ var x=new Date(d); x.setDate(x.getDate()+n); return x; }
+function sameDay(a,b){ return dateOnly(a).getTime()===dateOnly(b).getTime(); }
+function todayDate(){ return dateOnly(new Date()); }
+function fmtWeekday(d){ return d.toLocaleDateString('es-ES',{weekday:'short'}).replace('.',''); }
+function fmtDayMonth(d){ return d.toLocaleDateString('es-ES',{day:'numeric',month:'short'}); }
+function fmtTime(d){ return d.toLocaleTimeString('es-ES',{hour:'2-digit',minute:'2-digit'}); }
+function fmtFullDay(d){
+  var t = todayDate();
+  if(sameDay(d,t)) return 'Hoy';
+  if(sameDay(d,addDays(t,-1))) return 'Ayer';
+  var s = d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});
+  return s.charAt(0).toUpperCase()+s.slice(1);
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function personName(p){ if(!state.settings) return p==='A'?'Persona A':'Persona B'; return p==='A'?state.settings.nameA:state.settings.nameB; }
+function personColorVar(p){ return p==='A'?'var(--person-a)':'var(--person-b)'; }
+function personPillClass(p){ return p==='A'?'pill-a':'pill-b'; }
+
+function toast(msg){
+  var root = document.getElementById('toast-root');
+  root.innerHTML = '<div class="toast">'+esc(msg)+'</div>';
+  setTimeout(function(){ if(root.firstChild) root.innerHTML=''; }, 3200);
+}
+
+function taskCompletions(taskId){
+  return state.completions.filter(function(c){ return c.taskId===taskId; });
+}
+function lastCompletionFor(taskId){
+  var list = taskCompletions(taskId);
+  return list.length ? list[0] : null;
+}
+function computeStatus(task){
+  var last = lastCompletionFor(task.id);
+  var lastDate = last ? new Date(last.completedAt) : null;
+  var created = new Date(task.createdAt);
+  var today = todayDate();
+  var base = lastDate ? dateOnly(lastDate) : dateOnly(created);
+  var doneToday = lastDate && sameDay(lastDate, today);
+  var due;
+  if(task.freqType==='daily'){
+    due = lastDate ? addDays(base,1) : base;
+  } else if(task.freqType==='weekly'){
+    var wds = (task.weekdays&&task.weekdays.length)?task.weekdays:[1];
+    var start = lastDate ? addDays(base,1) : base;
+    due = start;
+    for(var i=0;i<8;i++){ if(wds.indexOf(due.getDay())!==-1) break; due = addDays(due,1); }
+  } else {
+    var n = Math.max(1, task.intervalDays||7);
+    due = lastDate ? addDays(base,n) : base;
+  }
+  var status;
+  if(doneToday) status = 'done_today';
+  else if(due.getTime() < today.getTime()) status = 'overdue';
+  else if(due.getTime() === today.getTime()) status = 'today';
+  else status = 'upcoming';
+  return {due:due, status:status, last:lastDate, doneToday:doneToday};
+}
+function isScheduledOn(task, day){
+  var created = dateOnly(new Date(task.createdAt));
+  if(day.getTime() < created.getTime()) return false;
+  if(task.freqType==='daily') return true;
+  if(task.freqType==='weekly'){
+    var wds = (task.weekdays&&task.weekdays.length)?task.weekdays:[1];
+    return wds.indexOf(day.getDay())!==-1;
+  }
+  var n = Math.max(1, task.intervalDays||7);
+  var diff = Math.round((day.getTime()-created.getTime())/86400000);
+  return diff>=0 && (diff % n === 0);
+}
+function isDoneOn(taskId, day){
+  return state.completions.some(function(c){ return c.taskId===taskId && sameDay(new Date(c.completedAt), day); });
+}
+
+function freqLabel(task){
+  if(task.freqType==='daily') return 'Todos los días';
+  if(task.freqType==='weekly'){
+    var wds=(task.weekdays&&task.weekdays.length)?task.weekdays.slice().sort():[1];
+    return wds.map(function(w){return WEEKDAY_LABEL[w];}).join(', ');
+  }
+  return 'Cada '+(task.intervalDays||7)+' días';
+}
+
+async function withDb(fn){
+  if(!state.db){ toast('Sin conexión a los datos. Recarga la página.'); return; }
+  try{ await fn(); }
+  catch(e){
+    if(e && e.code==='permission-denied'){
+      toast('No tienes permiso para editar. Revisa las reglas de Firestore.');
+    } else {
+      toast('No se pudo guardar. Revisa tu conexión e intenta de nuevo.');
+    }
+  }
+}
+
+async function markDone(task, person){
+  await withDb(async function(){
+    await state.db.collection('completions').add({
+      taskId: task.id, taskTitle: task.title, taskIcon: task.icon||'📌',
+      person: person, completedAt: new Date().toISOString()
+    });
+    if(task.assignMode==='rotate'){
+      await state.db.doc('tasks/'+task.id).update({ assignee: person==='A'?'B':'A' });
+    }
+  });
+  ui.chooseFor = null;
+  render();
+}
+async function deleteCompletion(id){
+  await withDb(async function(){ await state.db.doc('completions/'+id).delete(); });
+  ui.confirmDelCompletion = null;
+  render();
+}
+async function saveTask(data, id){
+  await withDb(async function(){
+    if(id){ await state.db.doc('tasks/'+id).update(data); }
+    else {
+      data.createdAt = new Date().toISOString();
+      data.assignee = data.assignee || 'A';
+      await state.db.collection('tasks').add(data);
+    }
+  });
+  ui.editingTask = null; ui.addingTask = false;
+  render();
+}
+async function deleteTask(id){
+  await withDb(async function(){ await state.db.doc('tasks/'+id).delete(); });
+  ui.confirmDelTask = null;
+  render();
+}
+async function saveSettings(nameA, nameB){
+  await withDb(async function(){
+    await state.db.doc('settings/general').set({
+      nameA: nameA, nameB: nameB,
+      createdAt: (state.settings && state.settings.createdAt) || new Date().toISOString()
+    });
+  });
+}
+async function seedTasks(){
+  var seeds = [
+    {title:'Lavar los platos', icon:'🍽️', freqType:'daily', assignMode:'rotate'},
+    {title:'Sacar la basura', icon:'🗑️', freqType:'weekly', weekdays:[1,4], assignMode:'rotate'},
+    {title:'Limpiar el baño', icon:'🚽', freqType:'custom', intervalDays:7, assignMode:'rotate'},
+    {title:'Hacer las compras', icon:'🛒', freqType:'custom', intervalDays:7, assignMode:'rotate'},
+    {title:'Lavar la ropa', icon:'👕', freqType:'weekly', weekdays:[2,5], assignMode:'rotate'},
+    {title:'Aspirar y trapear', icon:'🧹', freqType:'custom', intervalDays:4, assignMode:'rotate'},
+    {title:'Limpiar la cocina', icon:'🍳', freqType:'daily', assignMode:'rotate'}
+  ];
+  await withDb(async function(){
+    for(var i=0;i<seeds.length;i++){
+      var s = seeds[i];
+      s.createdAt = new Date().toISOString();
+      s.assignee = i%2===0 ? 'A':'B';
+      await state.db.collection('tasks').add(s);
+    }
+  });
+}
+
+/* ---------- Firebase connection ---------- */
+function configIsPlaceholder(){
+  return !firebaseConfig.apiKey || firebaseConfig.apiKey.indexOf('TU_') === 0;
+}
+function showSetupScreen(){
+  document.getElementById('topbar').classList.add('hidden');
+  document.getElementById('app').innerHTML =
+    '<div class="setup-screen"><h2 style="font-size:18px; margin-bottom:10px">Falta conectar la base de datos</h2>'+
+    '<p class="modal-sub">Esta app necesita un proyecto gratuito de Firebase para que los datos se compartan entre los dos celulares. Sigue los pasos que te dio Claude y pega tu configuración en el bloque <code>firebaseConfig</code> al principio de <code>index.html</code>.</p></div>';
+}
+function connectDb(){
+  if(configIsPlaceholder()){ showSetupScreen(); return; }
+  try{
+    firebase.initializeApp(firebaseConfig);
+  }catch(e){ /* already initialized on hot reload */ }
+  firebase.auth().signInAnonymously().then(function(){
+    var fdb = firebase.firestore();
+    state.db = fdb;
+    document.getElementById('topbar').classList.remove('hidden');
+
+    fdb.doc('settings/general').onSnapshot(function(snap){
+      state.settingsLoaded = true;
+      state.settings = snap.exists ? snap.data() : null;
+      render();
+    }, function(){ state.settingsLoaded = true; render(); });
+
+    fdb.collection('tasks').onSnapshot(function(qs){
+      state.tasksLoaded = true;
+      state.tasks = qs.docs.map(function(d){ var v=d.data(); v.id=d.id; return v; });
+      render();
+    }, function(){ state.tasksLoaded = true; render(); });
+
+    fdb.collection('completions').orderBy('completedAt','desc').limit(500).onSnapshot(function(qs){
+      state.completionsLoaded = true;
+      state.completions = qs.docs.map(function(d){ var v=d.data(); v.id=d.id; return v; });
+      render();
+    }, function(){ state.completionsLoaded = true; render(); });
+  }).catch(function(err){
+    document.getElementById('app').innerHTML = '<div class="card"><strong>No se pudo conectar con Firebase.</strong><br><br>'+esc(err.message||'')+'<br><br>Revisa que el proyecto tenga Firestore activado y el inicio de sesión anónimo habilitado.</div>';
+  });
+}
+
+/* ---------- Notifications ---------- */
+function pendingCount(){
+  var n = 0;
+  state.tasks.filter(function(t){ return t.active!==false; }).forEach(function(t){
+    var st = computeStatus(t);
+    if(st.status==='overdue' || st.status==='today') n++;
+  });
+  return n;
+}
+function showReminder(count){
+  var title = count===1 ? 'Tienes 1 tarea pendiente' : 'Tienes '+count+' tareas pendientes';
+  var body = 'Abre Casa a Medias para ver qué falta por hacer.';
+  if(navigator.serviceWorker && navigator.serviceWorker.ready){
+    navigator.serviceWorker.ready.then(function(reg){
+      reg.showNotification(title, {body: body, icon: 'icon-192.png', tag:'casa-a-medias-pending'});
+    }).catch(function(){ try{ new Notification(title, {body:body}); }catch(e){} });
+  } else {
+    try{ new Notification(title, {body:body}); }catch(e){}
+  }
+}
+function checkReminders(){
+  var count = pendingCount();
+  document.title = count>0 ? '('+count+') Casa a Medias' : 'Casa a Medias';
+  if(count>0 && ('Notification' in window) && Notification.permission==='granted' && document.hidden && count!==lastNotifiedCount){
+    showReminder(count);
+  }
+  lastNotifiedCount = count;
+}
+function requestNotifications(){
+  if(!('Notification' in window)){ toast('Este navegador no admite notificaciones.'); return; }
+  Notification.requestPermission().then(function(perm){
+    if(perm==='granted'){ toast('Avisos activados en este dispositivo.'); checkReminders(); }
+    else { toast('No se activaron los avisos.'); }
+    render();
+  });
+}
+setInterval(checkReminders, 30*60*1000);
+document.addEventListener('visibilitychange', function(){ if(document.hidden) checkReminders(); });
+
+/* ---------- Rendering ---------- */
+function render(){
+  var topSub = document.getElementById('who-sub');
+  if(!state.settingsLoaded){ topSub.textContent = 'cargando…'; }
+  else if(state.settings){
+    var mp = myPerson();
+    topSub.innerHTML = mp ? ('En este dispositivo: <span class="me-badge" style="color:'+personColorVar(mp)+'">'+esc(personName(mp))+'</span>') : (esc(state.settings.nameA)+' &amp; '+esc(state.settings.nameB));
+  } else { topSub.textContent=''; }
+
+  var tabsEl = document.getElementById('tabs');
+  tabsEl.innerHTML = TABS.map(function(t){
+    return '<button class="tab-btn'+(ui.tab===t.id?' active':'')+'" data-action="set-tab" data-tab="'+t.id+'">'+t.label+'</button>';
+  }).join('');
+
+  var app = document.getElementById('app');
+  if(!state.settingsLoaded || !state.tasksLoaded || !state.completionsLoaded){
+    app.innerHTML = '<div class="empty">Cargando…</div>';
+  } else if(!state.settings){
+    app.innerHTML = '';
+    renderOnboarding();
+    return;
+  } else if(!myPerson()){
+    app.innerHTML = renderWhoAmI();
+  } else {
+    app.innerHTML = renderTab();
+    checkReminders();
+  }
+  renderModal();
+}
+
+function renderWhoAmI(){
+  return '<div class="card">'+
+    '<h2 style="font-size:16px; margin-bottom:4px">¿Quién usa este dispositivo?</h2>'+
+    '<p class="modal-sub">Así sabemos quién marca cada tarea desde aquí. Puedes cambiarlo luego en Ajustes.</p>'+
+    '<div class="whoami">'+
+      '<button class="whoami-btn a" data-action="set-me" data-person="A">'+esc(state.settings.nameA)+'</button>'+
+      '<button class="whoami-btn b" data-action="set-me" data-person="B">'+esc(state.settings.nameB)+'</button>'+
+    '</div></div>';
+}
+
+function renderOnboarding(){
+  var modalRoot = document.getElementById('modal-root');
+  modalRoot.innerHTML =
+    '<div class="modal-wrap"><div class="modal onboard-card">'+
+      '<h2>Bienvenidos a Casa a Medias</h2>'+
+      '<p class="modal-sub">Un espacio para repartir, recordar y seguir las tareas del hogar entre los dos. Para empezar, ¿cómo se llaman?</p>'+
+      '<form data-action="submit-onboard">'+
+        '<label>Primer nombre</label><input name="nameA" placeholder="Ej. Jorge" required maxlength="24">'+
+        '<label>Segundo nombre</label><input name="nameB" placeholder="Ej. Ale" required maxlength="24">'+
+        '<button type="submit" class="btn btn-primary" style="width:100%; margin-top:16px; padding:11px">Crear nuestro espacio</button>'+
+      '</form>'+
+    '</div></div>';
+}
+
+function renderModal(){
+  var root = document.getElementById('modal-root');
+  if(ui.settingsOpen && state.settings){
+    var notifState = ('Notification' in window) ? Notification.permission : 'unsupported';
+    var notifLabel = notifState==='granted' ? 'Activados ✓' : (notifState==='denied' ? 'Bloqueados en el navegador' : 'Activar');
+    root.innerHTML =
+    '<div class="modal-wrap" data-action="backdrop"><div class="modal">'+
+      '<h2>Ajustes</h2>'+
+      '<form data-action="submit-settings">'+
+        '<label>Primer nombre</label><input name="nameA" value="'+esc(state.settings.nameA)+'" required maxlength="24">'+
+        '<label>Segundo nombre</label><input name="nameB" value="'+esc(state.settings.nameB)+'" required maxlength="24">'+
+        '<button type="submit" class="btn btn-primary" style="width:100%; margin-top:14px; padding:10px">Guardar nombres</button>'+
+      '</form>'+
+      '<label style="margin-top:20px">Este dispositivo es de</label>'+
+      '<div class="whoami">'+
+        '<button class="whoami-btn a" data-action="set-me" data-person="A">'+esc(state.settings.nameA)+'</button>'+
+        '<button class="whoami-btn b" data-action="set-me" data-person="B">'+esc(state.settings.nameB)+'</button>'+
+      '</div>'+
+      '<label style="margin-top:20px">Avisos en este dispositivo</label>'+
+      '<div class="notif-btn">'+
+        '<span style="font-size:13px">Recordatorio de tareas pendientes</span>'+
+        (notifState==='granted' ? '<span style="font-size:13px; font-weight:700; color:var(--good)">Activados</span>' :
+          '<button class="btn btn-sm" data-action="enable-notif">Activar</button>')+
+      '</div>'+
+      '<p class="modal-sub" style="margin-top:18px">El aviso aparece cuando hay tareas atrasadas o para hoy y tienes la app en segundo plano o cerrada en una pestaña abierta. Para que funcione mejor, instala la app en tu pantalla de inicio desde el menú del navegador ("Añadir a pantalla de inicio").</p>'+
+      '<button class="btn" style="width:100%; margin-top:6px" data-action="close-settings">Cerrar</button>'+
+    '</div></div>';
+  } else {
+    root.innerHTML = '';
+  }
+}
+
+function renderTab(){
+  if(ui.tab==='hoy') return renderHoy();
+  if(ui.tab==='semana') return renderSemana();
+  if(ui.tab==='historial') return renderHistorial();
+  if(ui.tab==='stats') return renderStats();
+  if(ui.tab==='tareas') return renderTareas();
+  return '';
+}
+
+function taskCard(task, opts){
+  opts = opts || {};
+  var st = computeStatus(task);
+  var pill = '';
+  if(st.status==='overdue') pill = '<span class="pill pill-overdue">Atrasada</span>';
+  else if(st.status==='today') pill = '<span class="pill pill-today">Hoy</span>';
+  else if(st.status==='done_today') pill = '<span class="pill pill-done">Hecha hoy</span>';
+  var assignPill = '<span class="pill '+personPillClass(task.assignee)+'">'+esc(personName(task.assignee))+'</span>';
+  var choosing = ui.chooseFor === task.id;
+  var actions = '';
+  if(opts.showActions && st.status!=='done_today'){
+    if(choosing){
+      actions = '<div class="choose-row">'+
+        '<button class="choose-btn choose-a" data-action="mark-done" data-task="'+task.id+'" data-person="A">'+esc(state.settings.nameA)+'</button>'+
+        '<button class="choose-btn choose-b" data-action="mark-done" data-task="'+task.id+'" data-person="B">'+esc(state.settings.nameB)+'</button>'+
+        '<button class="btn-ghost" data-action="cancel-choose" style="flex:0 0 auto">Cancelar</button>'+
+      '</div>';
+    } else if(task.assignMode==='fixed'){
+      actions = '<div class="task-actions"><button class="btn btn-primary" data-action="mark-done" data-task="'+task.id+'" data-person="'+task.assignee+'">Marcar hecho</button></div>';
+    } else {
+      actions = '<div class="task-actions">'+
+        '<button class="btn btn-primary" data-action="mark-done" data-task="'+task.id+'" data-person="'+task.assignee+'">Hecho por '+esc(personName(task.assignee))+'</button>'+
+        '<button class="btn-ghost" data-action="choose-person" data-task="'+task.id+'">fue el otro</button>'+
+      '</div>';
+    }
+  }
+  return '<div class="card"><div class="task-row">'+
+      '<div class="task-icon">'+esc(task.icon||'📌')+'</div>'+
+      '<div class="task-main">'+
+        '<div class="task-title">'+esc(task.title)+'</div>'+
+        '<div class="task-meta">'+freqLabel(task)+' · '+(task.assignMode==='rotate'?'Turnan':'Siempre')+'</div>'+
+        '<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap">'+assignPill+pill+'</div>'+
+        actions+
+      '</div></div></div>';
+}
+
+function renderHoy(){
+  var active = state.tasks.filter(function(t){ return t.active!==false; });
+  var overdue=[], today=[], doneToday=[];
+  active.forEach(function(t){
+    var st = computeStatus(t);
+    if(st.status==='overdue') overdue.push(t);
+    else if(st.status==='today') today.push(t);
+    else if(st.status==='done_today') doneToday.push(t);
+  });
+  var html = '';
+  if(!active.length){
+    html += '<div class="empty">Todavía no hay tareas. Agrega algunas en la pestaña <strong>Tareas</strong>.</div>';
+    return html;
+  }
+  if(overdue.length){
+    html += '<div class="section-title">Atrasadas</div>' + overdue.map(function(t){return taskCard(t,{showActions:true});}).join('');
+  }
+  html += '<div class="section-title">Para hoy</div>';
+  html += today.length ? today.map(function(t){return taskCard(t,{showActions:true});}).join('') : '<div class="empty">Nada pendiente para hoy. 🎉</div>';
+  if(doneToday.length){
+    html += '<div class="section-title">Hechas hoy</div>' + doneToday.map(function(t){return taskCard(t,{showActions:false});}).join('');
+  }
+  return html;
+}
+
+function renderSemana(){
+  var today = todayDate();
+  var mondayThis = addDays(today, -(((today.getDay()+6)%7)));
+  var monday = addDays(mondayThis, ui.weekOffset*7);
+  var days = []; for(var i=0;i<7;i++) days.push(addDays(monday,i));
+  var active = state.tasks.filter(function(t){ return t.active!==false; });
+  var label = fmtDayMonth(days[0])+' – '+fmtDayMonth(days[6]);
+  var html = '<div class="card">'+
+    '<div class="week-nav">'+
+      '<button class="icon-btn" data-action="week-prev" aria-label="Semana anterior">‹</button>'+
+      '<span class="week-nav-label">'+label+'</span>'+
+      '<button class="icon-btn" data-action="week-next" aria-label="Semana siguiente">›</button>'+
+    '</div>'+
+    '<div class="week-grid">'+
+    days.map(function(d){
+      var isToday = sameDay(d,today);
+      var items = active.filter(function(t){ return isScheduledOn(t,d); });
+      var chips = items.map(function(t){
+        var done = isDoneOn(t.id,d);
+        return '<div class="week-chip'+(done?' done':'')+'" title="'+esc(t.title)+'">'+esc(t.icon||'📌')+'</div>';
+      }).join('');
+      return '<div class="week-day'+(isToday?' is-today':'')+'">'+
+        '<div class="week-day-head">'+fmtWeekday(d)+'</div>'+
+        '<div class="week-day-num">'+d.getDate()+'</div>'+
+        chips+
+      '</div>';
+    }).join('')+
+    '</div>'+
+    (ui.weekOffset!==0 ? '<button class="btn-ghost" style="margin-top:10px" data-action="week-today">volver a esta semana</button>' : '')+
+    '</div>';
+  return html;
+}
+
+function renderHistorial(){
+  if(!state.completions.length) return '<div class="empty">Todavía no se ha marcado ninguna tarea.</div>';
+  var byDay = {};
+  var order = [];
+  state.completions.forEach(function(c){
+    var d = dateOnly(new Date(c.completedAt));
+    var key = d.getTime();
+    if(!byDay[key]){ byDay[key]=[]; order.push(key); }
+    byDay[key].push(c);
+  });
+  return order.map(function(key){
+    var d = new Date(key);
+    var rows = byDay[key].map(function(c){
+      var confirming = ui.confirmDelCompletion === c.id;
+      return '<div class="hist-row">'+
+        '<span class="hist-time">'+fmtTime(new Date(c.completedAt))+'</span>'+
+        '<span class="hist-text">'+esc(c.taskIcon||'📌')+' '+esc(c.taskTitle)+' — <span style="color:'+personColorVar(c.person)+'; font-weight:700">'+esc(personName(c.person))+'</span></span>'+
+        (confirming ?
+          '<button class="btn btn-sm btn-danger" data-action="confirm-del-completion" data-id="'+c.id+'">Sí, borrar</button>'+
+          '<button class="btn-ghost" data-action="cancel-del-completion">no</button>'
+          : '<button class="btn-ghost" data-action="ask-del-completion" data-id="'+c.id+'" aria-label="Borrar">✕</button>')+
+      '</div>';
+    }).join('');
+    return '<div class="hist-day">'+fmtFullDay(d)+'</div><div class="card" style="padding:4px 16px">'+rows+'</div>';
+  }).join('');
+}
+
+function renderStats(){
+  var cutoff = null;
+  if(ui.statsPeriod==='7') cutoff = addDays(todayDate(),-6);
+  else if(ui.statsPeriod==='30') cutoff = addDays(todayDate(),-29);
+  var filtered = state.completions.filter(function(c){
+    if(!cutoff) return true;
+    return new Date(c.completedAt).getTime() >= cutoff.getTime();
+  });
+  var countA = filtered.filter(function(c){return c.person==='A';}).length;
+  var countB = filtered.filter(function(c){return c.person==='B';}).length;
+  var total = countA+countB;
+  var pctA = total ? Math.round(countA/total*100) : 50;
+  var pctB = 100-pctA;
+
+  var pendingOverdueA=0, pendingOverdueB=0;
+  state.tasks.filter(function(t){return t.active!==false;}).forEach(function(t){
+    var st = computeStatus(t);
+    if(st.status==='overdue'){ if(t.assignee==='A') pendingOverdueA++; else pendingOverdueB++; }
+  });
+
+  var html = '<div class="card">'+
+    '<div class="period-tabs">'+
+      '<button class="period-btn'+(ui.statsPeriod==='7'?' active':'')+'" data-action="set-period" data-period="7">7 días</button>'+
+      '<button class="period-btn'+(ui.statsPeriod==='30'?' active':'')+'" data-action="set-period" data-period="30">30 días</button>'+
+      '<button class="period-btn'+(ui.statsPeriod==='all'?' active':'')+'" data-action="set-period" data-period="all">Todo</button>'+
+    '</div>';
+
+  if(!total){
+    html += '<div class="empty">Todavía no hay tareas completadas en este periodo.</div></div>';
+    return html;
+  }
+
+  html += '<div class="split-bar">'+
+      (pctA>0?'<div class="split-seg" style="width:'+pctA+'%; background:var(--person-a)">'+pctA+'%</div>':'')+
+      (pctB>0?'<div class="split-seg" style="width:'+pctB+'%; background:var(--person-b)">'+pctB+'%</div>':'')+
+    '</div>'+
+    '<div style="display:flex; justify-content:space-between; font-size:12.5px; color:var(--fg-muted)">'+
+      '<span>'+esc(state.settings.nameA)+'</span><span>'+esc(state.settings.nameB)+'</span>'+
+    '</div>'+
+    '<div class="stat-grid">'+
+      '<div class="stat-tile"><div class="num" style="color:var(--person-a)">'+countA+'</div><div class="lab">tareas de '+esc(state.settings.nameA)+'</div></div>'+
+      '<div class="stat-tile"><div class="num" style="color:var(--person-b)">'+countB+'</div><div class="lab">tareas de '+esc(state.settings.nameB)+'</div></div>'+
+      '<div class="stat-tile"><div class="num" style="color:var(--danger)">'+pendingOverdueA+'</div><div class="lab">atrasadas de '+esc(state.settings.nameA)+'</div></div>'+
+      '<div class="stat-tile"><div class="num" style="color:var(--danger)">'+pendingOverdueB+'</div><div class="lab">atrasadas de '+esc(state.settings.nameB)+'</div></div>'+
+    '</div>'+
+  '</div>';
+  return html;
+}
+
+function taskForm(task){
+  var t = task || {title:'', icon:'📌', freqType:'daily', weekdays:[1], intervalDays:7, assignMode:'rotate', assignee:'A'};
+  var wds = t.weekdays || [1];
+  return '<form data-action="submit-task" data-id="'+(task?task.id:'')+'">'+
+    '<div class="row">'+
+      '<div style="flex:0 0 64px"><label>Ícono</label><input name="icon" value="'+esc(t.icon)+'" maxlength="2"></div>'+
+      '<div><label>Tarea</label><input name="title" value="'+esc(t.title)+'" placeholder="Ej. Lavar los platos" required maxlength="60"></div>'+
+    '</div>'+
+    '<label>Frecuencia</label>'+
+    '<select name="freqType" data-action="freq-change">'+
+      '<option value="daily"'+(t.freqType==='daily'?' selected':'')+'>Todos los días</option>'+
+      '<option value="weekly"'+(t.freqType==='weekly'?' selected':'')+'>Días de la semana</option>'+
+      '<option value="custom"'+(t.freqType==='custom'?' selected':'')+'>Cada N días</option>'+
+    '</select>'+
+    '<div id="freq-weekly" class="'+(t.freqType==='weekly'?'':'hidden')+'" style="margin-top:8px">'+
+      '<div class="weekday-grid">'+
+      WEEKDAY_ORDER.map(function(w){
+        return '<div class="weekday-chip'+(wds.indexOf(w)!==-1?' on':'')+'" data-action="toggle-weekday" data-day="'+w+'">'+WEEKDAY_LABEL[w]+'</div>';
+      }).join('')+
+      '</div><input type="hidden" name="weekdays" value="'+wds.join(',')+'">'+
+    '</div>'+
+    '<div id="freq-custom" class="'+(t.freqType==='custom'?'':'hidden')+'" style="margin-top:8px">'+
+      '<input name="intervalDays" type="number" min="1" max="60" value="'+(t.intervalDays||7)+'" placeholder="Cada cuántos días">'+
+    '</div>'+
+    '<label>¿Quién la hace?</label>'+
+    '<select name="assignMode">'+
+      '<option value="rotate"'+(t.assignMode==='rotate'?' selected':'')+'>Turnan entre los dos</option>'+
+      '<option value="fixed"'+(t.assignMode==='fixed'?' selected':'')+'>Siempre la misma persona</option>'+
+    '</select>'+
+    '<label>'+(t.assignMode==='rotate'?'Le toca ahora a':'Persona asignada')+'</label>'+
+    '<select name="assignee">'+
+      '<option value="A"'+(t.assignee==='A'?' selected':'')+'>'+esc(state.settings.nameA)+'</option>'+
+      '<option value="B"'+(t.assignee==='B'?' selected':'')+'>'+esc(state.settings.nameB)+'</option>'+
+    '</select>'+
+    '<div class="row" style="margin-top:16px">'+
+      '<button type="submit" class="btn btn-primary">'+(task?'Guardar cambios':'Agregar tarea')+'</button>'+
+      '<button type="button" class="btn" data-action="cancel-task-form">Cancelar</button>'+
+    '</div>'+
+  '</form>';
+}
+
+function renderTareas(){
+  var active = state.tasks.filter(function(t){ return t.active!==false; });
+  var html = '';
+  if(ui.addingTask){
+    html += '<div class="card"><h2 style="font-size:15px; margin-bottom:10px">Nueva tarea</h2>'+taskForm(null)+'</div>';
+  } else {
+    html += '<button class="btn btn-primary" style="width:100%; margin-bottom:14px; padding:11px" data-action="start-add-task">+ Agregar tarea</button>';
+  }
+  if(!active.length && !ui.addingTask){
+    html += '<div class="empty">No hay tareas todavía.</div>';
+  }
+  html += active.map(function(t){
+    if(ui.editingTask===t.id){
+      return '<div class="card"><h2 style="font-size:15px; margin-bottom:10px">Editar tarea</h2>'+taskForm(t)+'</div>';
+    }
+    var confirming = ui.confirmDelTask===t.id;
+    return '<div class="card"><div class="task-row">'+
+      '<div class="task-icon">'+esc(t.icon||'📌')+'</div>'+
+      '<div class="task-main">'+
+        '<div class="task-title">'+esc(t.title)+'</div>'+
+        '<div class="task-meta">'+freqLabel(t)+' · '+(t.assignMode==='rotate'?'Turnan, le toca a '+esc(personName(t.assignee)):'Siempre '+esc(personName(t.assignee)))+'</div>'+
+        '<div class="task-actions">'+
+          '<button class="btn btn-sm" data-action="start-edit-task" data-id="'+t.id+'">Editar</button>'+
+          (confirming ?
+            ('<button class="btn btn-sm btn-danger" data-action="confirm-del-task" data-id="'+t.id+'">Sí, eliminar</button><button class="btn-ghost" data-action="cancel-del-task">no</button>')
+            : ('<button class="btn-ghost" data-action="ask-del-task" data-id="'+t.id+'">eliminar</button>'))+
+        '</div>'+
+      '</div></div></div>';
+  }).join('');
+  return html;
+}
+
+function getWeekdaysFromForm(form){
+  var hidden = form.querySelector('input[name="weekdays"]');
+  return hidden && hidden.value ? hidden.value.split(',').filter(Boolean).map(Number) : [];
+}
+
+document.addEventListener('click', function(e){
+  var el = e.target.closest('[data-action]');
+  if(!el) return;
+  var action = el.getAttribute('data-action');
+  switch(action){
+    case 'set-tab': ui.tab = el.getAttribute('data-tab'); ui.chooseFor=null; render(); break;
+    case 'open-settings': ui.settingsOpen = true; render(); break;
+    case 'close-settings': ui.settingsOpen = false; render(); break;
+    case 'backdrop': if(el===e.target){ ui.settingsOpen=false; render(); } break;
+    case 'set-me': setMyPerson(el.getAttribute('data-person')); ui.settingsOpen=false; break;
+    case 'choose-person': ui.chooseFor = el.getAttribute('data-task'); render(); break;
+    case 'cancel-choose': ui.chooseFor = null; render(); break;
+    case 'mark-done':
+      var taskId = el.getAttribute('data-task');
+      var taskObj = state.tasks.find(function(t){ return t.id===taskId; });
+      if(taskObj) markDone(taskObj, el.getAttribute('data-person'));
+      break;
+    case 'ask-del-completion': ui.confirmDelCompletion = el.getAttribute('data-id'); render(); break;
+    case 'cancel-del-completion': ui.confirmDelCompletion = null; render(); break;
+    case 'confirm-del-completion': deleteCompletion(el.getAttribute('data-id')); break;
+    case 'week-prev': ui.weekOffset--; render(); break;
+    case 'week-next': ui.weekOffset++; render(); break;
+    case 'week-today': ui.weekOffset=0; render(); break;
+    case 'set-period': ui.statsPeriod = el.getAttribute('data-period'); render(); break;
+    case 'start-add-task': ui.addingTask = true; ui.editingTask=null; render(); break;
+    case 'start-edit-task': ui.editingTask = el.getAttribute('data-id'); ui.addingTask=false; render(); break;
+    case 'cancel-task-form': ui.addingTask = false; ui.editingTask = null; render(); break;
+    case 'ask-del-task': ui.confirmDelTask = el.getAttribute('data-id'); render(); break;
+    case 'cancel-del-task': ui.confirmDelTask = null; render(); break;
+    case 'confirm-del-task': deleteTask(el.getAttribute('data-id')); break;
+    case 'enable-notif': requestNotifications(); break;
+    case 'toggle-weekday':
+      var form = el.closest('form');
+      var hidden = form.querySelector('input[name="weekdays"]');
+      var day = el.getAttribute('data-day');
+      var cur = hidden.value ? hidden.value.split(',').filter(Boolean) : [];
+      var idx = cur.indexOf(day);
+      if(idx===-1) cur.push(day); else cur.splice(idx,1);
+      hidden.value = cur.join(',');
+      el.classList.toggle('on');
+      break;
+  }
+});
+
+document.addEventListener('change', function(e){
+  if(e.target.name==='freqType'){
+    var form = e.target.closest('form');
+    form.querySelector('#freq-weekly').classList.toggle('hidden', e.target.value!=='weekly');
+    form.querySelector('#freq-custom').classList.toggle('hidden', e.target.value!=='custom');
+  }
+});
+
+document.addEventListener('submit', function(e){
+  e.preventDefault();
+  var action = e.target.getAttribute('data-action');
+  if(action==='submit-onboard'){
+    var nameA = e.target.nameA.value.trim(), nameB = e.target.nameB.value.trim();
+    if(!nameA||!nameB) return;
+    withDb(async function(){
+      await saveSettings(nameA, nameB);
+      await seedTasks();
+    });
+  } else if(action==='submit-settings'){
+    var a = e.target.nameA.value.trim(), b = e.target.nameB.value.trim();
+    if(!a||!b) return;
+    saveSettings(a,b);
+    ui.settingsOpen = false; render();
+  } else if(action==='submit-task'){
+    var f = e.target;
+    var id = f.getAttribute('data-id') || null;
+    var data = {
+      title: f.title.value.trim(),
+      icon: f.icon.value.trim() || '📌',
+      freqType: f.freqType.value,
+      assignMode: f.assignMode.value,
+      assignee: f.assignee.value,
+      active: true
+    };
+    if(data.freqType==='weekly') data.weekdays = getWeekdaysFromForm(f);
+    if(data.freqType==='custom') data.intervalDays = Math.max(1, parseInt(f.intervalDays.value,10)||7);
+    if(!data.title) return;
+    saveTask(data, id);
+  }
+});
+
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.register('sw.js').catch(function(){});
+}
+connectDb();
+render();
+</script>
+</body>
+</html>
