@@ -233,6 +233,45 @@ var WEEKDAY_ORDER = [1,2,3,4,5,6,0];
 var WEEKDAY_LABEL = {0:'Dom',1:'Lun',2:'Mar',3:'Mié',4:'Jue',5:'Vie',6:'Sáb'};
 var lastNotifiedCount = 0;
 
+// The household code is the only secret: all data lives under casas/<code>/.
+var HOUSE_KEY = 'casaAMedias_house';
+function storeGet(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } }
+function storeSet(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+function randomCode(){
+  var chars = 'abcdefghijkmnpqrstuvwxyz23456789', out = '';
+  var arr = new Uint32Array(20);
+  window.crypto.getRandomValues(arr);
+  for(var i=0;i<arr.length;i++) out += chars[arr[i] % chars.length];
+  return out;
+}
+function parseHouseCode(s){
+  if(!s) return null;
+  var m = String(s).match(/casa=([a-z0-9]+)/i);
+  var c = (m ? m[1] : String(s)).trim().toLowerCase();
+  return /^[a-z0-9]{16,40}$/.test(c) ? c : null;
+}
+function houseCode(){
+  var fromUrl = parseHouseCode(new URLSearchParams(location.search).get('casa'));
+  if(fromUrl){
+    storeSet(HOUSE_KEY, fromUrl);
+    history.replaceState(null, '', location.pathname);
+    return fromUrl;
+  }
+  var saved = parseHouseCode(storeGet(HOUSE_KEY));
+  if(saved) return saved;
+  var fresh = randomCode();
+  storeSet(HOUSE_KEY, fresh);
+  return fresh;
+}
+var HOUSE = houseCode();
+function inviteLink(){ return location.origin + location.pathname + '?casa=' + HOUSE; }
+function scopedDb(db, prefix){
+  return {
+    doc: function(p){ return db.doc(prefix + p); },
+    collection: function(p){ return db.collection(prefix + p); }
+  };
+}
+
 function myPerson(){ try{ return localStorage.getItem('casaAMedias_myPerson'); }catch(e){ return null; } }
 function setMyPerson(p){ try{ localStorage.setItem('casaAMedias_myPerson', p); }catch(e){} render(); }
 
@@ -494,7 +533,7 @@ function connectDb(){
     firebase.initializeApp(firebaseConfig);
   }catch(e){ /* already initialized on hot reload */ }
   firebase.auth().signInAnonymously().then(function(){
-    subscribeAll(firebase.firestore());
+    subscribeAll(scopedDb(firebase.firestore(), 'casas/' + HOUSE + '/'));
   }).catch(function(err){
     document.getElementById('app').innerHTML = '<div class="card"><strong>No se pudo conectar con Firebase.</strong><br><br>'+esc(err.message||'')+'<br><br>Revisa que el proyecto tenga Firestore activado y el inicio de sesión anónimo habilitado.</div>';
   });
@@ -591,6 +630,14 @@ function renderOnboarding(){
         '<label>Segundo nombre</label><input name="nameB" placeholder="Ej. Ale" required maxlength="24">'+
         '<button type="submit" class="btn btn-primary" style="width:100%; margin-top:16px; padding:11px">Crear nuestro espacio</button>'+
       '</form>'+
+      (state.localMode ? '' :
+        '<div style="margin-top:18px; padding-top:14px; border-top:1px solid var(--border)">'+
+          '<p class="modal-sub" style="margin-bottom:8px">¿Tu pareja ya creó la casa? Pega el link o el código que te compartió.</p>'+
+          '<form data-action="submit-join" class="row">'+
+            '<input id="join-code" name="code" placeholder="Link o código" autocomplete="off">'+
+            '<button type="submit" class="btn" style="flex:0 0 auto">Unirme</button>'+
+          '</form>'+
+        '</div>')+
     '</div></div>';
 }
 
@@ -612,6 +659,13 @@ function renderModal(){
         '<button class="whoami-btn a" data-action="set-me" data-person="A">'+esc(state.settings.nameA)+'</button>'+
         '<button class="whoami-btn b" data-action="set-me" data-person="B">'+esc(state.settings.nameB)+'</button>'+
       '</div>'+
+      (state.localMode ? '' :
+        '<label style="margin-top:20px">Invita a tu pareja</label>'+
+        '<p class="modal-sub" style="margin-bottom:8px">Que abra este link en su celular para entrar a la misma casa. No lo publiques: quien lo tenga puede ver y editar sus tareas.</p>'+
+        '<div class="row">'+
+          '<input id="invite-link" readonly value="'+esc(inviteLink())+'">'+
+          '<button class="btn btn-sm" style="flex:0 0 auto" data-action="copy-invite">Copiar</button>'+
+        '</div>')+
       '<label style="margin-top:20px">Avisos en este dispositivo</label>'+
       '<div class="notif-btn">'+
         '<span style="font-size:13px">Recordatorio de tareas pendientes</span>'+
@@ -914,6 +968,13 @@ document.addEventListener('click', function(e){
     case 'cancel-del-task': ui.confirmDelTask = null; render(); break;
     case 'confirm-del-task': deleteTask(el.getAttribute('data-id')); break;
     case 'enable-notif': requestNotifications(); break;
+    case 'copy-invite':
+      var inp = document.getElementById('invite-link');
+      var fallback = function(){ inp.select(); toast('Mantén presionado el link para copiarlo.'); };
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(inp.value).then(function(){ toast('Link copiado'); }, fallback);
+      } else { fallback(); }
+      break;
     case 'toggle-weekday':
       var form = el.closest('form');
       var hidden = form.querySelector('input[name="weekdays"]');
@@ -945,6 +1006,11 @@ document.addEventListener('submit', function(e){
       await saveSettings(nameA, nameB);
       await seedTasks();
     });
+  } else if(action==='submit-join'){
+    var code = parseHouseCode(e.target.code.value);
+    if(!code){ toast('Ese código no es válido. Pega el link completo que te compartieron.'); return; }
+    storeSet(HOUSE_KEY, code);
+    location.reload();
   } else if(action==='submit-settings'){
     var a = e.target.nameA.value.trim(), b = e.target.nameB.value.trim();
     if(!a||!b) return;
