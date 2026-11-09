@@ -1,0 +1,9 @@
+{
+  "name": "casa-avisos",
+  "private": true,
+  "description": "Envía los avisos push de Casa desde GitHub Actions",
+  "dependencies": {
+    "firebase-admin": "^12.0.0",
+    "web-push": "^3.6.6"
+  }
+}

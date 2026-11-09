@@ -1,4 +1,4 @@
-var CACHE_NAME = 'casa-a-medias-v2';
+var CACHE_NAME = 'casa-v3';
 var SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function(event){
@@ -31,12 +31,27 @@ self.addEventListener('fetch', function(event){
   );
 });
 
+// Sent by the notifier (GitHub Actions) even when the app is closed.
+self.addEventListener('push', function(event){
+  var data = {};
+  try{ data = event.data ? event.data.json() : {}; }
+  catch(e){ data = { body: event.data ? event.data.text() : '' }; }
+  event.waitUntil(self.registration.showNotification(data.title || 'La solución', {
+    body: data.body || '',
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    tag: data.tag || undefined,
+    data: { url: data.url || './' }
+  }));
+});
+
 self.addEventListener('notificationclick', function(event){
   event.notification.close();
+  var url = (event.notification.data && event.notification.data.url) || './';
   event.waitUntil(
-    self.clients.matchAll({type:'window'}).then(function(list){
+    self.clients.matchAll({type:'window', includeUncontrolled:true}).then(function(list){
       for(var i=0;i<list.length;i++){ if('focus' in list[i]) return list[i].focus(); }
-      if(self.clients.openWindow) return self.clients.openWindow('./');
+      if(self.clients.openWindow) return self.clients.openWindow(url);
     })
   );
 });

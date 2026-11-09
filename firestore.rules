@@ -2,10 +2,11 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     // Only these two accounts can read or write. Emails in lowercase.
+    // pushState is written only by the notifier (admin access bypasses these rules).
     match /{coleccion}/{doc} {
       allow read, write: if request.auth != null
         && request.auth.token.email in ['CORREO_1', 'CORREO_2']
-        && coleccion in ['settings', 'tasks', 'completions'];
+        && coleccion in ['settings', 'tasks', 'completions', 'pushSubs'];
     }
   }
 }

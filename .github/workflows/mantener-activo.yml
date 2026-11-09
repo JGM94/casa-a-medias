@@ -1,0 +1,24 @@
+# GitHub pauses scheduled workflows after 60 days without repo activity.
+# One small commit a month keeps the reminders running.
+name: Mantener activo
+
+on:
+  schedule:
+    - cron: '17 4 1 * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  latido:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          date -u +%Y-%m-%d > .github/ultimo-latido
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/ultimo-latido
+          git commit -m "Mantener activos los avisos" || exit 0
+          git push

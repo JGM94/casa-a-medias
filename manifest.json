@@ -1,6 +1,6 @@
 {
-  "name": "Casa",
-  "short_name": "Casa",
+  "name": "La solución a nuestros problemas",
+  "short_name": "La solución",
   "description": "Reparte, recuerda y da seguimiento a las tareas del hogar entre dos personas.",
   "start_url": "./index.html",
   "scope": "./",
