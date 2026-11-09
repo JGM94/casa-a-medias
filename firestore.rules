@@ -1,9 +1,10 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Only reachable by someone who knows the household code (the {casa} segment).
-    match /casas/{casa}/{coleccion}/{doc} {
-      allow read, write: if casa.size() >= 16
+    // Only these two accounts can read or write. Emails in lowercase.
+    match /{coleccion}/{doc} {
+      allow read, write: if request.auth != null
+        && request.auth.token.email in ['CORREO_1', 'CORREO_2']
         && coleccion in ['settings', 'tasks', 'completions'];
     }
   }
