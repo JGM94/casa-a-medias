@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>La solución a nuestros problemas</title>
+<title>Planificator</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="La solución">
+<meta name="apple-mobile-web-app-title" content="Planificator">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;600;700&display=swap">
 <style>
@@ -290,7 +290,7 @@ var firebaseConfig = {
 <div id="topbar" class="hidden">
   <div class="topbar-row">
     <div>
-      <h1>La solución a nuestros problemas</h1>
+      <h1>Planificator</h1>
       <div class="topbar-sub" id="who-sub"></div>
     </div>
     <button class="icon-btn" data-action="open-settings" aria-label="Ajustes">⚙️</button>
@@ -578,7 +578,7 @@ function checkReminders(){
   var mine = activeTasks().filter(function(t){ return t.assignee===me; })
     .map(function(t){ return {t:t, st:computeStatus(t)}; })
     .filter(function(x){ return x.st.status==='today' || x.st.status==='overdue'; });
-  document.title = (mine.length ? '('+mine.length+') ' : '') + 'La solución a nuestros problemas';
+  document.title = (mine.length ? '('+mine.length+') ' : '') + 'Planificator';
   var names = mine.slice(0,3).map(function(x){ return x.t.title; }).join(', ');
 
   a.times.forEach(function(tm){
@@ -673,7 +673,7 @@ async function enablePush(){
     var sub = await reg.pushManager.getSubscription() ||
               await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey: b64ToBytes(VAPID_PUBLIC_KEY) });
     if(await savePushSub(sub)){
-      reg.showNotification('Avisos activados', { body:'Así te llegarán los recordatorios de La solución.', icon:'icon-192.png', tag:'casa-prueba' });
+      reg.showNotification('Avisos activados', { body:'Así te llegarán los recordatorios de Planificator.', icon:'icon-192.png', tag:'casa-prueba' });
       toast('Avisos activados en este móvil');
     }
   }catch(e){
@@ -712,10 +712,10 @@ function renderPushControls(){
   var activate = '<button type="button" class="btn btn-primary" style="width:100%; margin-top:8px" data-action="enable-notif">Activar avisos en este móvil</button>';
   if(PREVIEW) return box('<strong>Avisos con la app cerrada</strong><p class="hint">En la app real, aquí los activas. Llegan a la pantalla de bloqueo y como banner arriba aunque la app esté cerrada. Pueden tardar unos minutos.</p>'+activate);
   if(isIOS() && !isStandalone()) return box('<strong>Primero, instala la app en tu iPhone</strong>'+
-    '<ol class="steps"><li>Toca el botón Compartir de Safari.</li><li>Elige "Añadir a pantalla de inicio".</li><li>Abre "La solución" desde el ícono nuevo y vuelve a Ajustes.</li></ol>'+
+    '<ol class="steps"><li>Toca el botón Compartir de Safari.</li><li>Elige "Añadir a pantalla de inicio".</li><li>Abre "Planificator" desde el ícono nuevo y vuelve a Ajustes.</li></ol>'+
     '<p class="hint">En iPhone, los avisos solo funcionan con la app instalada.</p>');
   if(!pushSupported()) return box('<strong>Este navegador no admite avisos.</strong><p class="hint">Usa Chrome en Android, o instala la app en iPhone.</p>');
-  if(Notification.permission==='denied') return box('<strong>Los avisos están bloqueados.</strong><p class="hint">Actívalos en los ajustes del móvil, en Notificaciones → La solución.</p>');
+  if(Notification.permission==='denied') return box('<strong>Los avisos están bloqueados.</strong><p class="hint">Actívalos en los ajustes del móvil, en Notificaciones → Planificator.</p>');
   if(lsGet('pushOn')==='1' && Notification.permission==='granted') return box('<strong style="color:var(--good)">Avisos activados en este móvil ✓</strong>'+
     '<p class="hint">Te llegan aunque la app esté cerrada. Pueden tardar unos minutos.</p>'+
     '<button type="button" class="btn-ghost" style="padding-left:0" data-action="disable-push">Desactivar en este móvil</button>');
@@ -1071,7 +1071,7 @@ function renderDemoBar(){
 
 function renderLogin(){
   return '<div class="onboard-wrap"><div class="card onboard-card">'+
-    '<h2 style="font-size:24px; margin-bottom:6px; color:var(--accent)">La solución a nuestros problemas</h2>'+
+    '<h2 style="font-size:24px; margin-bottom:6px; color:var(--accent)">Planificator</h2>'+
     '<p class="modal-sub">Entra con tu correo y contraseña.</p>'+
     '<form data-action="submit-login">'+
       '<label for="login-email">Correo</label>'+
@@ -1089,7 +1089,7 @@ function renderOnboarding(){
   if(document.getElementById('onboard-form')) return;
   root.innerHTML =
     '<div class="modal-wrap"><div class="modal">'+
-      '<h2>Bienvenidos a La solución a nuestros problemas</h2>'+
+      '<h2>Bienvenidos a Planificator</h2>'+
       '<p class="modal-sub">Para empezar, ¿cómo se llaman? Después cada uno elige su color en Ajustes.</p>'+
       '<form id="onboard-form" data-action="submit-onboard">'+
         '<label for="ob-a">Primer nombre</label><input id="ob-a" name="nameA" placeholder="Jorge" required maxlength="24">'+

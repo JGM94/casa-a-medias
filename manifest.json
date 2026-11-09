@@ -1,6 +1,6 @@
 {
-  "name": "La solución a nuestros problemas",
-  "short_name": "La solución",
+  "name": "Planificator",
+  "short_name": "Planificator",
   "description": "Reparte, recuerda y da seguimiento a las tareas del hogar entre dos personas.",
   "start_url": "./index.html",
   "scope": "./",

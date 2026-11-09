@@ -1,4 +1,4 @@
-var CACHE_NAME = 'casa-v3';
+var CACHE_NAME = 'casa-v4';
 var SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function(event){
@@ -36,7 +36,7 @@ self.addEventListener('push', function(event){
   var data = {};
   try{ data = event.data ? event.data.json() : {}; }
   catch(e){ data = { body: event.data ? event.data.text() : '' }; }
-  event.waitUntil(self.registration.showNotification(data.title || 'La solución', {
+  event.waitUntil(self.registration.showNotification(data.title || 'Planificator', {
     body: data.body || '',
     icon: 'icon-192.png',
     badge: 'icon-192.png',
