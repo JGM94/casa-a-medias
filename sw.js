@@ -1,7 +1,8 @@
-var CACHE_NAME = 'casa-a-medias-v1';
+var CACHE_NAME = 'casa-a-medias-v2';
 var SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function(event){
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache){ return cache.addAll(SHELL); })
   );
@@ -11,16 +12,21 @@ self.addEventListener('activate', function(event){
   event.waitUntil(
     caches.keys().then(function(keys){
       return Promise.all(keys.filter(function(k){ return k!==CACHE_NAME; }).map(function(k){ return caches.delete(k); }));
-    })
+    }).then(function(){ return self.clients.claim(); })
   );
 });
 
+// Network first so updates show up right away; cache only as offline fallback.
 self.addEventListener('fetch', function(event){
-  if(event.request.method!=='GET') return;
+  var req = event.request;
+  if(req.method!=='GET' || new URL(req.url).origin!==self.location.origin) return;
   event.respondWith(
-    caches.match(event.request).then(function(cached){
-      if(cached) return cached;
-      return fetch(event.request).catch(function(){ return cached; });
+    fetch(req).then(function(res){
+      var copy = res.clone();
+      caches.open(CACHE_NAME).then(function(cache){ cache.put(req, copy); });
+      return res;
+    }).catch(function(){
+      return caches.match(req).then(function(cached){ return cached || caches.match('./index.html'); });
     })
   );
 });
