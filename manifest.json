@@ -1,6 +1,6 @@
 {
-  "name": "Casa a Medias",
-  "short_name": "Casa a Medias",
+  "name": "Casa",
+  "short_name": "Casa",
   "description": "Reparte, recuerda y da seguimiento a las tareas del hogar entre dos personas.",
   "start_url": "./index.html",
   "scope": "./",

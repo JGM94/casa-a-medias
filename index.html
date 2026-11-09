@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Casa a Medias</title>
+<title>Casa</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="favicon-32.png" sizes="32x32">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -11,7 +11,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Casa a Medias">
+<meta name="apple-mobile-web-app-title" content="Casa">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Karla:wght@400;500;600;700&display=swap">
 <style>
@@ -52,6 +52,7 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0; background:var(--bg); color:var(--fg)}
+html{-webkit-text-size-adjust:100%; text-size-adjust:100%}
 body{
   font-family:'Karla',system-ui,sans-serif; font-size:15px; line-height:1.45;
   padding-top:env(safe-area-inset-top,0px);
@@ -120,7 +121,7 @@ main{max-width:640px; margin:0 auto; padding:16px 0 48px}
 .choose-b{border-color:var(--person-b); color:var(--person-b)}
 input,select{
   width:100%; background:var(--surface); border:1px solid var(--border); border-radius:9px;
-  padding:9px 11px; font-size:14px; color:var(--fg); font-family:inherit;
+  padding:9px 11px; font-size:16px; color:var(--fg); font-family:inherit;
 }
 label{font-size:12.5px; font-weight:700; color:var(--fg-muted); display:block; margin:12px 0 4px}
 label:first-child{margin-top:0}
@@ -177,6 +178,19 @@ label:first-child{margin-top:0}
 .whoami-btn.a{color:var(--person-a)}
 .whoami-btn.b{color:var(--person-b)}
 .me-badge{font-size:11px; font-weight:700; color:var(--fg-muted)}
+.extra-btn{width:100%; margin-bottom:18px; padding:11px; border-style:dashed; border-color:var(--accent); color:var(--accent)}
+.person-section{margin-bottom:24px}
+.person-head{display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px}
+.person-head h2{font-size:18px}
+.person-count{font-size:12.5px; font-weight:700; color:var(--fg-muted); white-space:nowrap}
+.done-list{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:2px 14px}
+.done-row{display:flex; align-items:center; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:14px}
+.done-row:last-child{border-bottom:none}
+.done-check{color:var(--good); font-weight:700}
+.done-text{flex:1; min-width:0; color:var(--fg-muted)}
+.pill-extra{background:var(--surface-alt); color:var(--fg-muted)}
+.choose-a.on{background:var(--person-a-soft); border-width:2px}
+.choose-b.on{background:var(--person-b-soft); border-width:2px}
 .notice{background:var(--warn-soft); color:var(--warn); border-radius:10px; padding:9px 12px; font-size:12.5px; font-weight:600; margin-bottom:14px}
 .notif-btn{display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--surface-alt); border-radius:10px; padding:10px 12px; margin-top:10px}
 </style>
@@ -205,7 +219,7 @@ var firebaseConfig = {
 <div id="topbar" class="hidden">
   <div class="topbar-row">
     <div>
-      <h1>Casa a Medias</h1>
+      <h1>Casa</h1>
       <div class="topbar-sub" id="who-sub">cargando…</div>
     </div>
     <button class="icon-btn" data-action="open-settings" aria-label="Ajustes">⚙️</button>
@@ -461,6 +475,22 @@ function makeLocalDb(){
   return { doc: docRef, collection: function(c){ return query(c, null, null); } };
 }
 
+// Live updates from the other phone must not wipe a form someone is typing in.
+var pendingRender = false;
+function isEditing(){
+  var a = document.activeElement;
+  return !!(a && a.form && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName));
+}
+function renderFromData(){
+  if(isEditing()){ pendingRender = true; return; }
+  render();
+}
+document.addEventListener('focusout', function(){
+  setTimeout(function(){
+    if(pendingRender && !isEditing()){ pendingRender = false; render(); }
+  }, 400);
+});
+
 function subscribeAll(db){
   state.db = db;
   document.getElementById('topbar').classList.remove('hidden');
@@ -470,19 +500,19 @@ function subscribeAll(db){
   db.doc('settings/general').onSnapshot(function(snap){
     state.settingsLoaded = true;
     state.settings = snap.exists ? snap.data() : null;
-    render();
+    renderFromData();
   }, onErr);
 
   db.collection('tasks').onSnapshot(function(qs){
     state.tasksLoaded = true;
     state.tasks = qs.docs.map(function(d){ var v=d.data(); v.id=d.id; return v; });
-    render();
+    renderFromData();
   }, onErr);
 
   db.collection('completions').orderBy('completedAt','desc').limit(500).onSnapshot(function(qs){
     state.completionsLoaded = true;
     state.completions = qs.docs.map(function(d){ var v=d.data(); v.id=d.id; return v; });
-    render();
+    renderFromData();
   }, onErr);
 }
 
@@ -505,7 +535,7 @@ function connectDb(){
 
 function renderLogin(){
   return '<div class="onboard-wrap"><div class="card onboard-card">'+
-    '<h2 style="font-size:20px; margin-bottom:6px; color:var(--accent)">Casa a Medias</h2>'+
+    '<h2 style="font-size:20px; margin-bottom:6px; color:var(--accent)">Casa</h2>'+
     '<p class="modal-sub">Entra con tu correo y contraseña.</p>'+
     '<form data-action="submit-login">'+
       '<label for="login-email">Correo</label>'+
@@ -529,7 +559,7 @@ function pendingCount(){
 }
 function showReminder(count){
   var title = count===1 ? 'Tienes 1 tarea pendiente' : 'Tienes '+count+' tareas pendientes';
-  var body = 'Abre Casa a Medias para ver qué falta por hacer.';
+  var body = 'Abre Casa para ver qué falta por hacer.';
   if(navigator.serviceWorker && navigator.serviceWorker.ready){
     navigator.serviceWorker.ready.then(function(reg){
       reg.showNotification(title, {body: body, icon: 'icon-192.png', tag:'casa-a-medias-pending'});
@@ -540,7 +570,7 @@ function showReminder(count){
 }
 function checkReminders(){
   var count = pendingCount();
-  document.title = count>0 ? '('+count+') Casa a Medias' : 'Casa a Medias';
+  document.title = count>0 ? '('+count+') Casa' : 'Casa';
   if(count>0 && ('Notification' in window) && Notification.permission==='granted' && document.hidden && count!==lastNotifiedCount){
     showReminder(count);
   }
@@ -618,7 +648,7 @@ function renderOnboarding(){
   var modalRoot = document.getElementById('modal-root');
   modalRoot.innerHTML =
     '<div class="modal-wrap"><div class="modal onboard-card">'+
-      '<h2>Bienvenidos a Casa a Medias</h2>'+
+      '<h2>Bienvenidos a Casa</h2>'+
       '<p class="modal-sub">Un espacio para repartir, recordar y seguir las tareas del hogar entre los dos. Para empezar, ¿cómo se llaman?</p>'+
       '<form data-action="submit-onboard">'+
         '<label>Primer nombre</label><input name="nameA" placeholder="Ej. Jorge" required maxlength="24">'+
@@ -656,6 +686,8 @@ function renderModal(){
       '<button class="btn" style="width:100%; margin-top:6px" data-action="close-settings">Cerrar</button>'+
       (state.user ? '<button class="btn-ghost" style="width:100%; margin-top:10px" data-action="sign-out">Cerrar sesión ('+esc(state.user.email)+')</button>' : '')+
     '</div></div>';
+  } else if(ui.extraOpen && state.settings){
+    if(!document.getElementById('extra-title')) root.innerHTML = renderExtraModal();
   } else {
     root.innerHTML = '';
   }
@@ -670,65 +702,98 @@ function renderTab(){
   return '';
 }
 
-function taskCard(task, opts){
-  opts = opts || {};
+function taskCard(task){
   var st = computeStatus(task);
-  var pill = '';
-  if(st.status==='overdue') pill = '<span class="pill pill-overdue">Atrasada</span>';
-  else if(st.status==='today') pill = '<span class="pill pill-today">Hoy</span>';
-  else if(st.status==='done_today') pill = '<span class="pill pill-done">Hecha hoy</span>';
-  var assignPill = '<span class="pill '+personPillClass(task.assignee)+'">'+esc(personName(task.assignee))+'</span>';
-  var choosing = ui.chooseFor === task.id;
-  var actions = '';
-  if(opts.showActions && st.status!=='done_today'){
-    if(choosing){
-      actions = '<div class="choose-row">'+
-        '<button class="choose-btn choose-a" data-action="mark-done" data-task="'+task.id+'" data-person="A">'+esc(state.settings.nameA)+'</button>'+
-        '<button class="choose-btn choose-b" data-action="mark-done" data-task="'+task.id+'" data-person="B">'+esc(state.settings.nameB)+'</button>'+
-        '<button class="btn-ghost" data-action="cancel-choose" style="flex:0 0 auto">Cancelar</button>'+
-      '</div>';
-    } else if(task.assignMode==='fixed'){
-      actions = '<div class="task-actions"><button class="btn btn-primary" data-action="mark-done" data-task="'+task.id+'" data-person="'+task.assignee+'">Marcar hecho</button></div>';
-    } else {
-      actions = '<div class="task-actions">'+
-        '<button class="btn btn-primary" data-action="mark-done" data-task="'+task.id+'" data-person="'+task.assignee+'">Hecho por '+esc(personName(task.assignee))+'</button>'+
-        '<button class="btn-ghost" data-action="choose-person" data-task="'+task.id+'">fue el otro</button>'+
-      '</div>';
-    }
-  }
+  var pill = st.status==='overdue' ? '<span class="pill pill-overdue">Atrasada</span>' : '';
+  var other = task.assignee==='A' ? 'B' : 'A';
   return '<div class="card"><div class="task-row">'+
       '<div class="task-icon">'+esc(task.icon||'📌')+'</div>'+
       '<div class="task-main">'+
-        '<div class="task-title">'+esc(task.title)+'</div>'+
+        '<div class="task-title">'+esc(task.title)+' '+pill+'</div>'+
         '<div class="task-meta">'+freqLabel(task)+' · '+(task.assignMode==='rotate'?'Turnan':'Siempre')+'</div>'+
-        '<div style="margin-top:8px; display:flex; gap:6px; flex-wrap:wrap">'+assignPill+pill+'</div>'+
-        actions+
+        '<div class="task-actions">'+
+          '<button class="btn btn-primary" data-action="mark-done" data-task="'+task.id+'" data-person="'+task.assignee+'">Hecho</button>'+
+          '<button class="btn-ghost" data-action="mark-done" data-task="'+task.id+'" data-person="'+other+'">lo hizo '+esc(personName(other))+'</button>'+
+        '</div>'+
       '</div></div></div>';
 }
 
 function renderHoy(){
   var active = state.tasks.filter(function(t){ return t.active!==false; });
-  var overdue=[], today=[], doneToday=[];
-  active.forEach(function(t){
-    var st = computeStatus(t);
-    if(st.status==='overdue') overdue.push(t);
-    else if(st.status==='today') today.push(t);
-    else if(st.status==='done_today') doneToday.push(t);
+  var today = todayDate();
+  var html = '<button class="btn extra-btn" data-action="open-extra">+ Registrar algo que hice</button>';
+  ['A','B'].forEach(function(p){
+    var pending = [];
+    active.forEach(function(t){
+      if(t.assignee!==p) return;
+      var s = computeStatus(t).status;
+      if(s==='overdue') pending.unshift(t);
+      else if(s==='today') pending.push(t);
+    });
+    var done = state.completions.filter(function(c){
+      return c.person===p && sameDay(new Date(c.completedAt), today);
+    });
+    html += '<section class="person-section">'+
+      '<div class="person-head">'+
+        '<h2 style="color:'+personColorVar(p)+'">Tareas de '+esc(personName(p))+'</h2>'+
+        '<span class="person-count">'+(pending.length ? pending.length+' pendiente'+(pending.length===1?'':'s') : 'Al día')+'</span>'+
+      '</div>'+
+      (pending.length ? pending.map(taskCard).join('') : '<div class="empty" style="padding:4px 2px 12px">Nada pendiente para hoy.</div>')+
+      (done.length ? '<div class="done-list">'+done.map(function(c){
+        return '<div class="done-row">'+
+          '<span class="done-check">✓</span>'+
+          '<span class="done-text">'+esc(c.taskIcon||'📌')+' '+esc(c.taskTitle)+(c.extra?' <span class="pill pill-extra">extra</span>':'')+'</span>'+
+          '<span class="hist-time">'+fmtTime(new Date(c.completedAt))+'</span>'+
+        '</div>';
+      }).join('')+'</div>' : '')+
+    '</section>';
   });
-  var html = '';
-  if(!active.length){
-    html += '<div class="empty">Todavía no hay tareas. Agrega algunas en la pestaña <strong>Tareas</strong>.</div>';
-    return html;
-  }
-  if(overdue.length){
-    html += '<div class="section-title">Atrasadas</div>' + overdue.map(function(t){return taskCard(t,{showActions:true});}).join('');
-  }
-  html += '<div class="section-title">Para hoy</div>';
-  html += today.length ? today.map(function(t){return taskCard(t,{showActions:true});}).join('') : '<div class="empty">Nada pendiente para hoy. 🎉</div>';
-  if(doneToday.length){
-    html += '<div class="section-title">Hechas hoy</div>' + doneToday.map(function(t){return taskCard(t,{showActions:false});}).join('');
-  }
   return html;
+}
+
+function renderExtraModal(){
+  var who = ui.extraWho || myPerson() || 'A';
+  var titles = state.tasks.filter(function(t){ return t.active!==false; }).map(function(t){ return t.title; });
+  return '<div class="modal-wrap" data-action="backdrop"><div class="modal">'+
+    '<h2>Registrar algo que hice</h2>'+
+    '<p class="modal-sub">Para lo que no estaba planeado. Queda en el historial y cuenta en el reparto.</p>'+
+    '<form data-action="submit-extra">'+
+      '<label for="extra-title">¿Qué hiciste?</label>'+
+      '<input id="extra-title" name="title" list="extra-suggest" placeholder="Ej. Limpiar el refri" required maxlength="60" autocomplete="off">'+
+      '<datalist id="extra-suggest">'+titles.map(function(t){ return '<option value="'+esc(t)+'">'; }).join('')+'</datalist>'+
+      '<label>¿Quién?</label>'+
+      '<div class="row">'+
+        '<button type="button" class="choose-btn choose-a'+(who==='A'?' on':'')+'" data-action="extra-who" data-person="A">'+esc(state.settings.nameA)+'</button>'+
+        '<button type="button" class="choose-btn choose-b'+(who==='B'?' on':'')+'" data-action="extra-who" data-person="B">'+esc(state.settings.nameB)+'</button>'+
+      '</div>'+
+      '<input type="hidden" name="person" value="'+who+'">'+
+      '<label for="extra-day">¿Cuándo?</label>'+
+      '<select id="extra-day" name="day"><option value="0">Hoy</option><option value="1">Ayer</option><option value="2">Antier</option></select>'+
+      '<div class="row" style="margin-top:16px">'+
+        '<button type="submit" class="btn btn-primary">Registrar</button>'+
+        '<button type="button" class="btn" data-action="close-extra">Cancelar</button>'+
+      '</div>'+
+    '</form>'+
+  '</div></div>';
+}
+
+async function saveExtra(title, person, when, task){
+  await withDb(async function(){
+    await state.db.collection('completions').add({
+      taskId: task ? task.id : null,
+      taskTitle: task ? task.title : title,
+      taskIcon: task ? (task.icon||'📌') : '✨',
+      person: person,
+      completedAt: when.toISOString(),
+      extra: !task
+    });
+    if(task && task.assignMode==='rotate'){
+      await state.db.doc('tasks/'+task.id).update({ assignee: person==='A'?'B':'A' });
+    }
+    toast('Registrado');
+  });
+  ui.extraOpen = false;
+  render();
 }
 
 function renderSemana(){
@@ -780,7 +845,7 @@ function renderHistorial(){
       var confirming = ui.confirmDelCompletion === c.id;
       return '<div class="hist-row">'+
         '<span class="hist-time">'+fmtTime(new Date(c.completedAt))+'</span>'+
-        '<span class="hist-text">'+esc(c.taskIcon||'📌')+' '+esc(c.taskTitle)+' — <span style="color:'+personColorVar(c.person)+'; font-weight:700">'+esc(personName(c.person))+'</span></span>'+
+        '<span class="hist-text">'+esc(c.taskIcon||'📌')+' '+esc(c.taskTitle)+(c.extra?' <span class="pill pill-extra">extra</span>':'')+' — <span style="color:'+personColorVar(c.person)+'; font-weight:700">'+esc(personName(c.person))+'</span></span>'+
         (confirming ?
           '<button class="btn btn-sm btn-danger" data-action="confirm-del-completion" data-id="'+c.id+'">Sí, borrar</button>'+
           '<button class="btn-ghost" data-action="cancel-del-completion">no</button>'
@@ -923,13 +988,19 @@ document.addEventListener('click', function(e){
   if(!el) return;
   var action = el.getAttribute('data-action');
   switch(action){
-    case 'set-tab': ui.tab = el.getAttribute('data-tab'); ui.chooseFor=null; render(); break;
+    case 'set-tab': ui.tab = el.getAttribute('data-tab'); render(); break;
     case 'open-settings': ui.settingsOpen = true; render(); break;
     case 'close-settings': ui.settingsOpen = false; render(); break;
-    case 'backdrop': if(el===e.target){ ui.settingsOpen=false; render(); } break;
+    case 'backdrop': if(el===e.target){ ui.settingsOpen=false; ui.extraOpen=false; render(); } break;
     case 'set-me': setMyPerson(el.getAttribute('data-person')); ui.settingsOpen=false; break;
-    case 'choose-person': ui.chooseFor = el.getAttribute('data-task'); render(); break;
-    case 'cancel-choose': ui.chooseFor = null; render(); break;
+    case 'open-extra': ui.extraOpen = true; ui.extraWho = myPerson() || 'A'; render(); break;
+    case 'close-extra': ui.extraOpen = false; render(); break;
+    case 'extra-who':
+      var formX = el.closest('form');
+      ui.extraWho = el.getAttribute('data-person');
+      formX.querySelector('input[name="person"]').value = ui.extraWho;
+      formX.querySelectorAll('[data-action="extra-who"]').forEach(function(b){ b.classList.toggle('on', b===el); });
+      break;
     case 'mark-done':
       var taskId = el.getAttribute('data-task');
       var taskObj = state.tasks.find(function(t){ return t.id===taskId; });
@@ -975,7 +1046,18 @@ document.addEventListener('change', function(e){
 
 document.addEventListener('submit', function(e){
   e.preventDefault();
+  if(document.activeElement && document.activeElement.blur) document.activeElement.blur();
   var action = e.target.getAttribute('data-action');
+  if(action==='submit-extra'){
+    var fx = e.target, title = fx.title.value.trim();
+    if(!title) return;
+    var when = new Date();
+    var daysAgo = parseInt(fx.day.value, 10) || 0;
+    if(daysAgo){ when = addDays(when, -daysAgo); when.setHours(12,0,0,0); }
+    var match = state.tasks.find(function(t){ return t.active!==false && t.title.trim().toLowerCase()===title.toLowerCase(); });
+    saveExtra(title, fx.person.value, when, match);
+    return;
+  }
   if(action==='submit-onboard'){
     var nameA = e.target.nameA.value.trim(), nameB = e.target.nameB.value.trim();
     if(!nameA||!nameB) return;
