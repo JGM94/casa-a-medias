@@ -258,10 +258,17 @@ label{font-size:12.5px; font-weight:700; color:var(--fg-muted); display:block; m
 .tour-card p{margin:0; font-size:14.5px; line-height:1.5}
 .tour-step{font-size:11.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--accent)}
 .tour-actions{display:flex; align-items:center; gap:6px; margin-top:14px}
+.tour-final{display:flex; flex-direction:column; gap:8px; margin-top:14px}
+.tour-final .btn{width:100%; padding:12px}
 .tour-dots{flex:1; display:flex; gap:4px; justify-content:center}
 .tour-dots span{width:6px; height:6px; border-radius:50%; background:var(--border)}
 .tour-dots span.on{background:var(--accent); width:14px; border-radius:99px}
 @media (prefers-reduced-motion: reduce){ .tour-spot{transition:none} }
+.empty-card{text-align:center; padding:26px 20px; margin-top:12px}
+.empty-card h2{font-size:20px; margin:8px 0 6px}
+.empty-card p{font-size:14px; color:var(--fg-muted); margin:0 auto 16px; max-width:34ch}
+.empty-art{font-size:34px; letter-spacing:6px}
+.danger-zone{background:var(--danger-soft); border-radius:12px; padding:12px; margin-top:12px; font-size:13.5px}
 .push-box{background:var(--surface-alt); border-radius:12px; padding:12px; margin-top:12px; font-size:14px}
 .steps{margin:6px 0 4px; padding-left:20px; font-size:13.5px; line-height:1.6}
 </style>
@@ -809,17 +816,16 @@ async function saveAlerts(p, patch){
   all[p] = Object.assign(alertsFor(p), patch);
   await updateSettings({alerts: all});
 }
-function defaultSeeds(me){
-  var today = dayKey(todayDate());
-  return [
-    {title:'Lavar los platos', icon:'🍽️', freqType:'daily', time:'21:00', points:10, assignMode:'rotate', assignee:'A'},
-    {title:'Sacar la basura', icon:'🗑️', freqType:'weekly', weekdays:[1,4], time:'20:30', points:5, assignMode:'rotate', assignee:'B'},
-    {title:'Limpiar el baño', icon:'🚽', freqType:'custom', intervalDays:7, points:20, assignMode:'rotate', assignee:'A'},
-    {title:'Hacer las compras', icon:'🛒', freqType:'custom', intervalDays:7, points:10, assignMode:'rotate', assignee:'B'},
-    {title:'Lavar la ropa', icon:'👕', freqType:'weekly', weekdays:[2,5], points:10, assignMode:'rotate', assignee:'A'},
-    {title:'Aspirar y trapear', icon:'🧹', freqType:'custom', intervalDays:4, points:20, assignMode:'rotate', assignee:'B'},
-    {title:'Limpiar la cocina', icon:'🍳', freqType:'daily', points:10, assignMode:'rotate', assignee:'A'}
-  ].map(function(t){ t.startDate = today; t.active = true; t.createdBy = me || 'A'; t.createdAt = new Date().toISOString(); return t; });
+async function resetAll(){
+  var paths = state.tasks.map(function(t){ return 'tasks/'+t.id; })
+    .concat(state.completions.map(function(c){ return 'completions/'+c.id; }));
+  var ok = await withDb(async function(){
+    for(var i=0;i<paths.length;i+=20){
+      await Promise.all(paths.slice(i,i+20).map(function(p){ return state.db.doc(p).delete(); }));
+    }
+  });
+  if(ok){ closeModal(); ui.tab = 'hoy'; ui.newTaskIds = {}; toast('Todo vacío. ¡A crear sus tareas!'); }
+  render();
 }
 
 /* ---------- data sources ---------- */
@@ -882,9 +888,7 @@ function makeLocalDb(){
   }
   return {
     doc: docRef,
-    collection: function(c){ return query(c, null, null); },
-    isEmpty: function(){ return !data.settings || !data.settings.general; },
-    wipe: function(){ data = {}; save(); }
+    collection: function(c){ return query(c, null, null); }
   };
 }
 
@@ -930,7 +934,6 @@ function connectDb(){
   if(PREVIEW){
     state.localMode = true;
     var ldb = makeLocalDb();
-    if(ldb.isEmpty()) seedPreview(ldb);
     if(!myPerson()) setMyPerson('A');
     subscribeAll(ldb);
     return;
@@ -947,12 +950,7 @@ function connectDb(){
 /* ---------- preview demo data ---------- */
 function seedPreview(db){
   var today = todayDate(), start = addDays(today, -10);
-  db.doc('settings/general').set({
-    nameA:'Jorge', nameB:'Lucía', colorA:'#D9622B', colorB:'#2E9466',
-    wager:'Quien pierda elige la peli del viernes 🍿',
-    alerts:{ A:{times:['09:00','20:00'], overdue:true, newTask:true, atTaskTime:true}, B:{times:['08:30'], overdue:true, newTask:true, atTaskTime:true} },
-    createdAt: start.toISOString()
-  });
+  if(!state.settings.wager) db.doc('settings/general').update({ wager:'Quien pierda elige la peli del viernes 🍿' });
   var tasks = [
     {id:'t1', title:'Lavar los platos', icon:'🍽️', freqType:'daily', time:'21:00', points:10, assignMode:'rotate', assignee:'A'},
     {id:'t2', title:'Sacar la basura', icon:'🗑️', freqType:'weekly', weekdays:[1,4], time:'20:30', points:5, assignMode:'fixed', assignee:'A'},
@@ -1057,7 +1055,8 @@ function render(){
 function renderDemoBar(){
   var me = myPerson();
   return '<div class="demo-bar">'+
-    '<div><strong>Borrador</strong> · datos de ejemplo. Nada de esto toca tu app real.</div>'+
+    '<div><strong>Borrador</strong> · nada de esto toca tu app real.</div>'+
+    (activeTasks().length ? '' : '<div class="demo-actions"><button class="btn btn-sm" data-action="demo-seed">Cargar datos de ejemplo</button><span class="muted">para ver cómo luce con uso</span></div>')+
     '<div class="demo-actions">'+
       '<span class="muted">Ver como:</span>'+
       ['A','B'].map(function(p){ return '<button class="chip'+(me===p?' on':'')+'" data-action="demo-as" data-person="'+p+'">'+avatar(p,18)+esc(personName(p))+'</button>'; }).join('')+
@@ -1065,7 +1064,7 @@ function renderDemoBar(){
     '<div class="demo-actions">'+
       '<button class="btn btn-sm" data-action="demo-assign">Simular que '+esc(personName(other(me)))+' te asigna una tarea</button>'+
       '<button class="btn-ghost" data-action="start-tour">Ver tour</button>'+
-      '<button class="btn-ghost" data-action="demo-reset">Reiniciar ejemplo</button>'+
+      '<button class="btn-ghost" data-action="demo-reset">Volver a empezar</button>'+
     '</div>'+
   '</div>';
 }
@@ -1148,25 +1147,37 @@ function renderHoy(){
   var minePending = activeTasks().filter(function(t){ var s = computeStatus(t).status; return t.assignee===me && (s==='today'||s==='overdue'); }).length;
   var html = '<div class="hero">'+avatar(me, 44)+'<div><div class="hero-title">Hola, '+esc(personName(me))+'</div>'+
     '<div class="hero-sub">'+(minePending ? minePending+' pendiente'+(minePending===1?'':'s')+' para ti' : 'No tienes nada pendiente 🎉')+' · 🔥 '+currentStreak(me)+' días seguidos</div></div></div>';
-  html += '<div class="chips">'+
+  if(activeTasks().length) html += '<div class="chips">'+
     '<button class="chip'+(ui.filter==='all'?' on':'')+'" data-action="filter" data-filter="all">Todas</button>'+
     '<button class="chip'+(ui.filter==='me'?' on':'')+'" data-action="filter" data-filter="me">'+avatar(me,18)+'Mías</button>'+
     '<button class="chip'+(ui.filter==='other'?' on':'')+'" data-action="filter" data-filter="other">'+avatar(other(me),18)+'De '+esc(personName(other(me)))+'</button>'+
   '</div>';
   html += '<button class="extra-btn" data-action="open-extra">+ Registrar algo que hice</button>';
+  if(!activeTasks().length){
+    html += emptyCard();
+    if(done.length) html += '<div class="section-title">Hechas hoy</div><div class="done-list">'+done.map(doneRow).join('')+'</div>';
+    return html;
+  }
   var overdue = items.filter(function(x){ return x.st.status==='overdue'; });
   var todays = items.filter(function(x){ return x.st.status==='today'; });
   if(overdue.length) html += '<div class="section-title">Atrasadas</div>' + overdue.map(function(x){ return taskCard(x.t, x.st); }).join('');
   html += '<div class="section-title">Para hoy</div>';
   html += todays.length ? todays.map(function(x){ return taskCard(x.t, x.st); }).join('') : '<div class="empty">Nada pendiente para hoy.</div>';
-  if(done.length){
-    html += '<div class="section-title">Hechas hoy</div><div class="done-list">'+done.map(function(c){
-      return '<div class="done-row">'+avatar(c.person, 22)+
-        '<span class="done-text">'+esc(c.taskIcon||'📌')+' '+esc(c.taskTitle)+(c.extra?' <span class="pill pill-extra">extra</span>':'')+(c.helped?' <span class="pill pill-help">ayudó</span>':'')+'</span>'+
-        '<span class="plus">+'+compPoints(c)+'</span><span class="time">'+fmtTime(new Date(c.completedAt))+'</span></div>';
-    }).join('')+'</div>';
-  }
+  if(done.length) html += '<div class="section-title">Hechas hoy</div><div class="done-list">'+done.map(doneRow).join('')+'</div>';
   return html;
+}
+function doneRow(c){
+  return '<div class="done-row">'+avatar(c.person, 22)+
+    '<span class="done-text">'+esc(c.taskIcon||'📌')+' '+esc(c.taskTitle)+(c.extra?' <span class="pill pill-extra">extra</span>':'')+(c.helped?' <span class="pill pill-help">ayudó</span>':'')+'</span>'+
+    '<span class="plus">+'+compPoints(c)+'</span><span class="time">'+fmtTime(new Date(c.completedAt))+'</span></div>';
+}
+function emptyCard(){
+  return '<div class="card empty-card">'+
+    '<div class="empty-art" aria-hidden="true">🧽🪣🧺</div>'+
+    '<h2>Todavía no hay tareas</h2>'+
+    '<p>Siéntense juntos y creen las primeras: qué hay que hacer, cada cuánto, a quién le toca y cuántos puntos vale.</p>'+
+    '<button class="btn btn-primary" style="padding:12px 18px" data-action="open-task">+ Crear la primera tarea</button>'+
+  '</div>';
 }
 
 function renderSemana(){
@@ -1223,7 +1234,7 @@ function renderMarcador(){
       : '<div class="wager-text">'+esc(s.wager || 'Todavía no hay apuesta. ¿Quién pierde invita la cena?')+'</div><button class="btn-ghost" style="padding-left:0" data-action="edit-wager">Cambiar apuesta</button>')+
   '</div>';
   var total = A + B;
-  html += '<div class="card"><div class="score-head"><span class="eyebrow">Esta semana</span><span class="muted">'+(daysLeft ? 'cierra en '+daysLeft+' día'+(daysLeft===1?'':'s') : 'cierra hoy')+'</span></div>'+
+  html += '<div class="card score-card"><div class="score-head"><span class="eyebrow">Esta semana</span><span class="muted">'+(daysLeft ? 'cierra en '+daysLeft+' día'+(daysLeft===1?'':'s') : 'cierra hoy')+'</span></div>'+
     '<div class="score-row">'+side('A',A)+'<div class="vs">vs</div>'+side('B',B)+'</div>'+
     '<div class="split-bar">'+(total ? '<span class="split-seg" style="width:'+(A/total*100)+'%; background:var(--person-a)"></span><span class="split-seg" style="width:'+(B/total*100)+'%; background:var(--person-b)"></span>' : '')+'</div>'+
     '<p class="muted" style="margin:10px 0 0">'+(lead ? esc(personName(lead))+' va ganando por '+Math.abs(A-B)+' puntos.' : (total ? 'Van empatados.' : 'Nadie ha sumado puntos esta semana.'))+
@@ -1300,34 +1311,45 @@ function renderTareas(){
       '<div class="task-meta">'+esc(freqLabel(t))+(t.time?' · '+esc(t.time):'')+' · '+esc(whoLabel(t))+'</div></div>'+
       '<button class="btn btn-sm" data-action="open-task" data-id="'+t.id+'">Editar</button></div>';
   }
+  if(!active.length) return emptyCard();
   var html = '<button class="btn btn-primary" style="width:100%; margin-bottom:14px; padding:12px" data-action="open-task">+ Nueva tarea</button>';
-  html += upcoming.length ? upcoming.map(row).join('') : '<div class="empty">No hay tareas todavía.</div>';
+  html += upcoming.length ? upcoming.map(row).join('') : '<div class="empty">No hay tareas pendientes.</div>';
   if(finished.length) html += '<div class="section-title">Ya hechas (una sola vez)</div>' + finished.map(row).join('');
   return html;
 }
 
 /* ---------- first-run tour ---------- */
 function otherName(){ return esc(personName(other(myPerson()))); }
+// Each step opens its tab first, then spotlights `target` (first match) or centers the card.
 var TOUR_STEPS = [
-  { title: function(){ return 'Hola, '+esc(personName(myPerson()))+' 👋'; },
-    text: function(){ return 'Esta app les ayuda a repartirse las tareas del hogar, recordarlas y ver quién hace más. Te enseño lo básico en un minuto.'; } },
-  { target: '.task-card', title: function(){ return 'Tus tareas de hoy'; },
-    text: function(){ return 'Cada tarjeta lleva el color de quien le toca. Toca <strong>Hecho</strong> al terminar. Si en realidad la hizo la otra persona, toca «lo hizo…»: quien ayuda gana 5 puntos extra.'; } },
-  { target: '#app .chips', title: function(){ return 'Filtra la lista'; },
-    text: function(){ return 'Mira todas las tareas, solo las tuyas o solo las de '+otherName()+'.'; } },
-  { target: '.extra-btn', title: function(){ return '¿Hiciste algo no planeado?'; },
+  { tab:'hoy', title: function(){ return 'Hola, '+esc(personName(myPerson()))+' 👋'; },
+    text: function(){ return 'Esta app les ayuda a repartirse las tareas del hogar, recordarlas y ver quién hace más. Te enseño cada pestaña en un minuto.'; } },
+  { tab:'hoy', target: '.task-card, .empty-card', title: function(){ return 'Hoy'; },
+    text: function(){ return 'Aquí ven lo que toca hoy. Cada tarjeta lleva el color de quien le toca: toca <strong>Hecho</strong> al terminar, o «lo hizo…» si la hizo '+otherName()+'. Quien ayuda gana 5 puntos extra.'; } },
+  { tab:'hoy', target: '.extra-btn', title: function(){ return '¿Hiciste algo no planeado?'; },
     text: function(){ return 'Regístralo aquí. Queda en el historial y también suma puntos.'; } },
-  { target: '[data-tab="semana"]', title: function(){ return 'Semana'; },
-    text: function(){ return 'El calendario de la semana. Toca un día para ver qué toca y programar algo para esa fecha.'; } },
-  { target: '[data-tab="marcador"]', title: function(){ return 'Un juego entre los dos'; },
-    text: function(){ return 'Cada tarea da puntos. En Marcador ven quién gana la semana, sus niveles, rachas e insignias. Pongan una apuesta para darle emoción.'; } },
-  { target: '[data-tab="tareas"]', title: function(){ return 'Tareas'; },
-    text: function(){ return 'Crea o edita tareas: qué día, a qué hora, quién la hace (o si se turnan) y cuántos puntos vale.'; } },
-  { target: '[data-action="open-settings"]', title: function(){ return 'Ajustes y avisos'; },
+  { tab:'semana', target: '.week-grid', title: function(){ return 'Semana'; },
+    text: function(){ return 'El calendario de la semana, con el color de quien le toca cada tarea. Toca un día para ver qué hay y programar algo para esa fecha.'; } },
+  { tab:'marcador', target: '.score-card', title: function(){ return 'Marcador'; },
+    text: function(){ return 'Cada tarea da puntos y aquí ven quién gana la semana. Arriba pueden poner una apuesta para darle emoción.'; } },
+  { tab:'marcador', target: '.players', title: function(){ return 'Niveles y rachas'; },
+    text: function(){ return 'Con los puntos suben de nivel, y si hacen algo cada día mantienen su racha 🔥. Más abajo están las insignias por desbloquear.'; } },
+  { tab:'historial', target: '.hist-day, #app .empty', title: function(){ return 'Historial'; },
+    text: function(){ return 'Todo lo que han hecho, día por día. Si alguien marcó algo por error, lo puede borrar aquí.'; } },
+  { tab:'tareas', target: '#app [data-action="open-task"]', title: function(){ return 'Tareas'; },
+    text: function(){ return 'Aquí crean y editan las tareas: qué día, a qué hora, quién la hace (o si se turnan) y cuántos puntos vale.'; } },
+  { tab:'tareas', target: '[data-action="open-settings"]', title: function(){ return 'Ajustes y avisos'; },
     text: function(){ return 'Aquí eliges tu color y cuándo quieres que te avisemos. Activa los avisos para que te lleguen aunque la app esté cerrada.'; } },
-  { final: true, title: function(){ return '¡Listo!'; },
-    text: function(){ return 'Que gane quien más limpie 🏆'; } }
+  { final: true,
+    title: function(){ return activeTasks().length ? '¡Listo!' : '¡Listo! Ahora, sus tareas'; },
+    text: function(){ return activeTasks().length ? 'Que gane quien más limpie 🏆' : 'Siéntense juntos y creen sus primeras tareas. Que gane quien más limpie 🏆'; } }
 ];
+function goTab(tab){
+  if(ui.tab===tab) return;
+  ui.tab = tab; ui.selDay = null;
+  render();
+  window.scrollTo(0,0);
+}
 var tourOffered = {};
 function maybeStartTour(){
   var me = myPerson();
@@ -1336,15 +1358,16 @@ function maybeStartTour(){
   setTimeout(function(){ if(!ui.modal && !ui.tour) startTour(); }, 500);
 }
 function startTour(){
-  if(ui.tab!=='hoy'){ ui.tab = 'hoy'; render(); }
+  goTab('hoy');
   window.scrollTo(0,0);
   ui.tour = {i:0};
   showTourStep();
 }
-function endTour(){
+function endTour(backTo){
   if(myPerson()) lsSet('tourDone_'+myPerson(), '1');
   ui.tour = null;
   document.getElementById('tour-root').innerHTML = '';
+  if(backTo) goTab(backTo);
 }
 function tourTarget(){
   var s = TOUR_STEPS[ui.tour.i];
@@ -1352,6 +1375,7 @@ function tourTarget(){
 }
 function showTourStep(){
   var i = ui.tour.i, s = TOUR_STEPS[i], n = TOUR_STEPS.length;
+  if(s.tab) goTab(s.tab);
   var el = tourTarget();
   if(el && !el.closest('#topbar')){
     var r = el.getBoundingClientRect();
@@ -1363,9 +1387,12 @@ function showTourStep(){
     '<div class="tour-card" role="dialog" aria-modal="true" aria-labelledby="tour-title">'+
       '<div class="tour-step">'+(i+1)+' de '+n+'</div>'+
       '<h3 id="tour-title">'+s.title()+'</h3><p>'+s.text()+'</p>'+
-      '<div class="tour-actions">'+
+      '<div class="'+(s.final ? 'tour-final' : 'tour-actions')+'">'+
         (s.final
-          ? '<button class="btn-ghost" data-action="tour-settings">Activar avisos</button><span class="tour-dots">'+dots+'</span><button class="btn btn-primary" data-action="tour-next">Empezar</button>'
+          ? (activeTasks().length
+              ? '<button class="btn btn-primary" data-action="tour-next">Empezar</button>'
+              : '<button class="btn btn-primary" data-action="tour-create">Crear la primera tarea</button>')+
+            '<button class="btn" data-action="tour-settings">Activar mis avisos</button>'
           : (i===0 ? '<button class="btn-ghost" data-action="tour-skip">Saltar</button>' : '<button class="btn-ghost" data-action="tour-back">Atrás</button>')+
             '<span class="tour-dots">'+dots+'</span><button class="btn btn-primary" data-action="tour-next">'+(i===0?'Empezar tour':'Siguiente')+'</button>')+
       '</div>'+
@@ -1400,7 +1427,7 @@ window.addEventListener('resize', placeTour);
 window.addEventListener('scroll', placeTour, {passive:true});
 document.addEventListener('keydown', function(e){
   if(!ui.tour) return;
-  if(e.key==='Escape'){ endTour(); }
+  if(e.key==='Escape'){ endTour('hoy'); }
   else if(e.key==='ArrowRight'){ document.querySelector('.tour-card [data-action="tour-next"]').click(); }
   else if(e.key==='ArrowLeft' && ui.tour.i>0){ ui.tour.i--; showTourStep(); }
 });
@@ -1544,6 +1571,14 @@ function renderSettingsModal(){
         return '<button type="button" class="whoami-btn" style="padding:10px 8px; flex-direction:row; justify-content:center;'+(me===p?' border-color:'+pVar(p):'')+'" data-action="set-me" data-person="'+p+'">'+avatar(p,24)+esc(personName(p))+'</button>';
       }).join('')+'</div>'+
     '</div>'+
+    '<div class="modal-section">'+
+      '<label>Empezar de cero</label>'+
+      '<p class="modal-sub">Borra todas las tareas y el historial para los dos. Los nombres, colores y avisos se quedan.</p>'+
+      '<button type="button" class="btn btn-danger" style="width:100%" data-action="ask-reset">Borrar tareas e historial</button>'+
+      '<div id="reset-confirm" class="danger-zone hidden"><strong>¿Seguro?</strong> Se borrarán '+state.tasks.length+' tareas y '+state.completions.length+' registros, para los dos. No se puede deshacer.'+
+        '<div class="row" style="margin-top:10px"><button type="button" class="btn btn-danger" data-action="confirm-reset">Sí, borrar todo</button><button type="button" class="btn" data-action="cancel-reset">Cancelar</button></div>'+
+      '</div>'+
+    '</div>'+
     '<button type="button" class="btn" style="width:100%; margin-top:20px" data-action="close-modal">Cerrar</button>'+
     '<button type="button" class="btn-ghost" style="width:100%; margin-top:8px" data-action="start-tour">Ver el tour otra vez</button>'+
     (state.user ? '<button type="button" class="btn-ghost" style="width:100%; margin-top:8px" data-action="sign-out">Cerrar sesión ('+esc(state.user.email)+')</button>' : '')+
@@ -1615,12 +1650,20 @@ document.addEventListener('click', function(e){
       saveAlerts(myPerson(), {times: times});
       break;
     case 'tour-next':
-      if(ui.tour.i >= TOUR_STEPS.length-1) endTour(); else { ui.tour.i++; showTourStep(); }
+      if(ui.tour.i >= TOUR_STEPS.length-1) endTour('hoy'); else { ui.tour.i++; showTourStep(); }
       break;
     case 'tour-back': ui.tour.i = Math.max(0, ui.tour.i-1); showTourStep(); break;
-    case 'tour-skip': endTour(); break;
-    case 'tour-settings': endTour(); openModal('settings'); break;
+    case 'tour-skip': endTour('hoy'); break;
+    case 'tour-settings': endTour('hoy'); openModal('settings'); break;
+    case 'tour-create': endTour('tareas'); openModal('task', {}); break;
     case 'start-tour': closeModal(); startTour(); break;
+    case 'ask-reset': el.classList.add('hidden'); document.getElementById('reset-confirm').classList.remove('hidden'); break;
+    case 'cancel-reset':
+      document.getElementById('reset-confirm').classList.add('hidden');
+      document.querySelector('[data-action="ask-reset"]').classList.remove('hidden');
+      break;
+    case 'confirm-reset': el.disabled = true; resetAll(); break;
+    case 'demo-seed': seedPreview(state.db); break;
     case 'enable-notif': enablePush(); break;
     case 'disable-push': disablePush(); break;
     case 'sign-out': firebase.auth().signOut().then(function(){ location.reload(); }); break;
@@ -1660,8 +1703,6 @@ document.addEventListener('submit', function(e){
     if(!nA || !nB) return;
     withDb(async function(){
       await state.db.doc('settings/general').set({ nameA:nA, nameB:nB, colorA:COLORS[0], colorB:COLORS[1], createdAt:new Date().toISOString() });
-      var seeds = defaultSeeds(myPerson());
-      for(var i=0;i<seeds.length;i++) await state.db.collection('tasks').add(seeds[i]);
     }).then(function(){ document.getElementById('modal-root').innerHTML = ''; render(); });
   } else if(a==='submit-names'){
     var x = fv(f,'nameA').trim(), y = fv(f,'nameB').trim();
